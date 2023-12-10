@@ -1,0 +1,13 @@
+[package]
+name = "repository"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+tokio.workspace = true
+serde.workspace = true
+
+[dependencies.sea-orm]
+version = "0.12.9"
+features = ["sqlx-mysql", "runtime-tokio-native-tls", "macros", "with-chrono", "with-uuid"]
