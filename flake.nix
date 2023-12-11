@@ -39,6 +39,16 @@
           inherit buildInputs;
         };
         packages.default = buildRustPackage { };
+        packages.release = buildRustPackage {
+          buildType = "release";
+        };
+        packages.ci = buildRustPackage {
+          doCheck = true;
+          checkPhase = ''
+            cargo fmt --all -- --check
+            cargo clippy --all-targets --all-features -- -D warnings
+          '';
+        };
       }
     );
 }
