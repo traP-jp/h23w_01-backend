@@ -6,42 +6,82 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Replace the sample below with your own migration scripts
-        todo!();
-
         manager
             .create_table(
                 Table::create()
-                    .table(Post::Table)
+                    .table(Card::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Post::Id)
-                            .integer()
-                            .not_null()
-                            .auto_increment()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(Post::Title).string().not_null())
-                    .col(ColumnDef::new(Post::Text).string().not_null())
+                    .col(ColumnDef::new(Card::Id).uuid().not_null().primary_key())
+                    .col(ColumnDef::new(Card::PublishDate).date_time().not_null())
+                    .col(ColumnDef::new(Card::Message).string())
                     .to_owned(),
             )
-            .await
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(PublishChannel::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(PublishChannel::Id)
+                            .uuid()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(PublishChannel::CardId).uuid().not_null())
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(CardContent::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(CardContent::Id)
+                            .uuid()
+                            .not_null()
+                            .primary_key(),
+                    )
+                    .col(ColumnDef::new(CardContent::Svg).string().not_null())
+                    .to_owned(),
+            )
+            .await?;
+        Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Replace the sample below with your own migration scripts
-        todo!();
-
         manager
-            .drop_table(Table::drop().table(Post::Table).to_owned())
-            .await
+            .drop_table(Table::drop().table(Card::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(PublishChannel::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(CardContent::Table).to_owned())
+            .await?;
+        Ok(())
     }
 }
 
 #[derive(DeriveIden)]
-enum Post {
+enum Card {
     Table,
     Id,
-    Title,
-    Text,
+    PublishDate,
+    Message,
+}
+
+#[derive(DeriveIden)]
+enum PublishChannel {
+    Table,
+    Id,
+    CardId,
+}
+
+#[derive(DeriveIden)]
+enum CardContent {
+    Table,
+    Id,
+    Svg,
 }
