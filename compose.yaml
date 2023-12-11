@@ -1,0 +1,37 @@
+version: "3"
+
+networks:
+  default:
+
+services:
+  mysql:
+    container_name: h23w1-db
+    image: mariadb:10
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+      MYSQL_DATABASE: db
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    expose:
+      - 3306
+    healthcheck:
+      test: mysql --user=root --password=pass --execute "SHOW DATABASES;"
+      interval: 1s
+      timeout: 10s
+      retries: 60
+    ports:
+      - "3306:3306"
+    networks:
+      - default
+
+  adminer:
+    image: adminer
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    ports:
+      - "8080:8080"
+    networks:
+      - default
+    depends_on:
+      mysql:
+        condition: service_healthy
