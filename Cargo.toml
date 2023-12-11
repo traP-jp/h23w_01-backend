@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["handler", "migration"]
+members = ["handler", "migration", "entity"]
 
 [workspace.dependencies]
 tokio = { version = "1.35.0", features = ["full"] }
