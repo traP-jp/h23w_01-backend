@@ -15,7 +15,7 @@ services:
     expose:
       - 3306
     healthcheck:
-      test: mysql --user=root --password=pass --execute "SHOW DATABASES;"
+      test: mysqladmin ping -h localhost -u root -ppass
       interval: 1s
       timeout: 10s
       retries: 60
