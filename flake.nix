@@ -20,7 +20,8 @@
           cargo = toolchain;
         };
         nativeBuildInputs = with pkgs; [ pkg-config ];
-        buildInputs = with pkgs; [ openssl libiconv ] ++ lib.optionals stdenvNoCC.isDarwin [ darwin.Security ];
+        buildInputs = with pkgs; [ openssl libiconv ]
+          ++ lib.optionals stdenvNoCC.isDarwin [ darwin.Security pkgs.darwin.apple_sdk.frameworks.SystemConfiguration ];
         defaultBuildArgs = {
           pname = "h23w_01-backend";
           version = "0.1.0";
