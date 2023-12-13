@@ -9,7 +9,7 @@ pub struct Model {
         auto_increment = false,
         column_type = "Binary(BlobSize::Blob(Some(16)))"
     )]
-    pub id: Vec<u8>,
+    pub id: Uuid,
     pub svg: String,
 }
 

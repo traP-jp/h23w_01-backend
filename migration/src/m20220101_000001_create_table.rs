@@ -23,12 +23,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(PublishChannel::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(PublishChannel::Id)
-                            .uuid()
-                            .not_null()
-                            .primary_key(),
-                    )
+                    .col(ColumnDef::new(PublishChannel::Id).uuid().not_null())
                     .col(ColumnDef::new(PublishChannel::CardId).uuid().not_null())
                     .to_owned(),
             )

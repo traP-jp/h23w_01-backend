@@ -9,9 +9,9 @@ pub struct Model {
         auto_increment = false,
         column_type = "Binary(BlobSize::Blob(Some(16)))"
     )]
-    pub id: Vec<u8>,
+    pub id: Uuid,
     #[sea_orm(column_type = "Binary(BlobSize::Blob(Some(16)))")]
-    pub card_id: Vec<u8>,
+    pub card_id: Uuid,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
