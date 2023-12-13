@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bytes = "1.5.0"
+reqwest = "0.11.22"
+serde_json.workspace = true
+thiserror = "1.0.50"
+tokio.workspace = true
+traq = "0.1.2"
