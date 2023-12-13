@@ -439,9 +439,11 @@ name = "handler"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bot-client",
  "rocket",
  "serde",
  "tokio",
+ "traq",
  "traq-bot-http",
 ]
 
