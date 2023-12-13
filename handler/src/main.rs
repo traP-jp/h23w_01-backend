@@ -8,5 +8,7 @@ fn ping() -> &'static str {
 
 #[launch]
 async fn rocket() -> _ {
-    rocket::build().mount("/", routes![ping])
+    rocket::build()
+        .mount("/api", routes![ping])
+        .mount("/api/cards", handler::cards::routes())
 }

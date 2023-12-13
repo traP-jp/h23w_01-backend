@@ -8,4 +8,4 @@ publish = false
 tokio.workspace = true
 serde.workspace = true
 async-trait.workspace = true
-rocket = "0.5"
+rocket = { version = "0.5", features = ["json"] }
