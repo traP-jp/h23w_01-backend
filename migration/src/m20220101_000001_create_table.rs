@@ -12,6 +12,7 @@ impl MigrationTrait for Migration {
                     .table(Card::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(Card::Id).uuid().not_null().primary_key())
+                    .col(ColumnDef::new(Card::OwnerId).uuid().not_null())
                     .col(ColumnDef::new(Card::PublishDate).date_time().not_null())
                     .col(ColumnDef::new(Card::Message).string())
                     .to_owned(),
@@ -68,6 +69,7 @@ impl MigrationTrait for Migration {
 enum Card {
     Table,
     Id,
+    OwnerId,
     PublishDate,
     Message,
 }
