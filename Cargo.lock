@@ -439,9 +439,12 @@ name = "handler"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bot-client",
  "rocket",
  "serde",
  "tokio",
+ "traq",
+ "traq-bot-http",
 ]
 
 [[package]]
@@ -833,6 +836,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "paste"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
+
+[[package]]
 name = "pear"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1090,6 +1099,7 @@ dependencies = [
  "rocket_codegen",
  "rocket_http",
  "serde",
+ "serde_json",
  "state",
  "tempfile",
  "time",
@@ -1658,6 +1668,17 @@ dependencies = [
  "serde_repr",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "traq-bot-http"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe73dac9e10cd133b41c89855611524daecbe50ff89bd610f67065c4fd7476fa"
+dependencies = [
+ "paste",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
