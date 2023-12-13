@@ -12,6 +12,7 @@ RUN apt-get -y update \
     && update-ca-certificates --fresh
 WORKDIR /app
 COPY --from=builder /app/target/debug/handler ./main
+COPY --from=builder /app/Rocket.toml ./Rocket.toml
 
 # TODO: migration
 
