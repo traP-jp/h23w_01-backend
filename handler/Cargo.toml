@@ -9,3 +9,4 @@ tokio.workspace = true
 serde.workspace = true
 async-trait.workspace = true
 rocket = { version = "0.5", features = ["json"] }
+traq-bot-http = "0.8.0"
