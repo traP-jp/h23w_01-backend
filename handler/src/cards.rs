@@ -18,8 +18,6 @@ pub struct CardResponse {
     // TODO: Vec<Uuid>
     pub publish_channels: Vec<String>,
     pub message: Option<String>,
-    // TODO: Vec<Uuid>
-    pub images: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -32,6 +30,8 @@ pub struct CardRequest {
     // TODO: Vec<Uuid>
     pub publish_channels: Vec<String>,
     pub message: Option<String>,
+    // TODO: Vec<Uuid>
+    pub images: Vec<String>,
 }
 
 async fn mock_card_response() -> CardResponse {
@@ -41,7 +41,6 @@ async fn mock_card_response() -> CardResponse {
         publish_date: "2023-12-13T08:10:05Z".to_string(),
         publish_channels: vec!["0ccb58b0-5300-4842-a7e6-b19c674f7090".to_string()],
         message: None,
-        images: vec![],
     }
 }
 
