@@ -8,7 +8,7 @@ use traq::apis::channel_api;
 use traq::apis::{configuration::Configuration, stamp_api};
 use traq::models::{ChannelList, Stamp, User};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BotClient {
     conf: Configuration,
 }
@@ -23,7 +23,7 @@ impl BotClient {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ImageData {
     Svg(String),
     Png(Bytes),
