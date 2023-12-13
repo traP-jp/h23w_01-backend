@@ -1,0 +1,11 @@
+# https://rocket.rs/v0.5/guide/configuration/#rockettoml
+[default]
+address = "0.0.0.0"
+port = 8000
+limits = { json = "10MiB" }
+
+## set only when compiled in debug mode, i.e, `cargo build`
+[debug]
+
+## set only when compiled in release mode, i.e, `cargo build --release`
+[release]
