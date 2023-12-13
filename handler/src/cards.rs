@@ -1,7 +1,9 @@
+use async_trait::async_trait;
+use rocket::data::{Data, FromData, Outcome, ToByteUnit};
 use rocket::fs::NamedFile;
 use rocket::http::Status;
 use rocket::serde::json::Json;
-use rocket::Route;
+use rocket::{Request, Route};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -40,6 +42,67 @@ async fn mock_card_response() -> CardResponse {
         publish_channels: vec!["0ccb58b0-5300-4842-a7e6-b19c674f7090".to_string()],
         message: None,
         images: vec![],
+    }
+}
+
+pub struct Svg(Vec<u8>);
+
+#[async_trait]
+impl<'a> FromData<'a> for Svg {
+    type Error = String;
+
+    async fn from_data(req: &'a Request<'_>, data: Data<'a>) -> Outcome<'a, Self> {
+        let Some(content_type) = req.content_type() else {
+            return Outcome::Error((
+                Status::BadRequest,
+                "content-type must be specified".to_string(),
+            ));
+        };
+        if !content_type.is_svg() {
+            return Outcome::Error((
+                Status::BadRequest,
+                format!(
+                    "expected image/svg+xml as content-type, found {}",
+                    content_type
+                ),
+            ));
+        }
+        let Ok(data) = data.open(5.megabytes()).into_bytes().await else {
+            return Outcome::Error((
+                Status::InternalServerError,
+                "failed to read request body".to_string(),
+            ));
+        };
+        Outcome::Success(Svg(data.into_inner()))
+    }
+}
+
+pub struct Png(Vec<u8>);
+
+#[async_trait]
+impl<'a> FromData<'a> for Png {
+    type Error = String;
+
+    async fn from_data(req: &'a Request<'_>, data: Data<'a>) -> Outcome<'a, Self> {
+        let Some(content_type) = req.content_type() else {
+            return Outcome::Error((
+                Status::BadRequest,
+                "content-type must be specified".to_string(),
+            ));
+        };
+        if !content_type.is_png() {
+            return Outcome::Error((
+                Status::BadRequest,
+                format!("expected image/png as content-type, found {}", content_type),
+            ));
+        }
+        let Ok(data) = data.open(5.megabytes()).into_bytes().await else {
+            return Outcome::Error((
+                Status::InternalServerError,
+                "failed to read request body".to_string(),
+            ));
+        };
+        Outcome::Success(Png(data.into_inner()))
     }
 }
 
@@ -92,14 +155,14 @@ pub async fn get_svg(id: String) -> (Status, Option<NamedFile>) {
 }
 
 #[rocket::post("/<id>/svg", data = "<svg>")]
-pub async fn post_svg(svg: Vec<u8>, id: String) -> Status {
-    println!("post image.svg {} with size {}", id, svg.len());
+pub async fn post_svg(svg: Svg, id: String) -> Status {
+    println!("post image.svg {} with size {}", id, svg.0.len());
     Status::NoContent
 }
 
 #[rocket::patch("/<id>/svg", data = "<svg>")]
-pub async fn patch_svg(svg: Vec<u8>, id: String) -> Status {
-    println!("patch image.svg {} with size {}", id, svg.len());
+pub async fn patch_svg(svg: Svg, id: String) -> Status {
+    println!("patch image.svg {} with size {}", id, svg.0.len());
     Status::NoContent
 }
 
@@ -116,14 +179,14 @@ pub async fn get_png(id: String) -> (Status, Option<NamedFile>) {
 }
 
 #[rocket::post("/<id>/png", data = "<png>")]
-pub async fn post_png(png: Vec<u8>, id: String) -> Status {
-    println!("post image.png {} with size {}", id, png.len());
+pub async fn post_png(png: Png, id: String) -> Status {
+    println!("post image.png {} with size {}", id, png.0.len());
     Status::NoContent
 }
 
 #[rocket::patch("/<id>/png", data = "<png>")]
-pub async fn patch_png(png: Vec<u8>, id: String) -> Status {
-    println!("patch image.png {} with size {}", id, png.len());
+pub async fn patch_png(png: Png, id: String) -> Status {
+    println!("patch image.png {} with size {}", id, png.0.len());
     Status::NoContent
 }
 
