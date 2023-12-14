@@ -15,9 +15,9 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::publish_channel::Entity")]
     PublishChannel,
-    #[sea_orm(has_many = "super::card_svg::Entity")]
+    #[sea_orm(has_one = "super::card_svg::Entity")]
     CardSvg,
-    #[sea_orm(has_many = "super::card_png::Entity")]
+    #[sea_orm(has_one = "super::card_png::Entity")]
     CardPng,
 }
 

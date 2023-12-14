@@ -89,8 +89,8 @@ async fn get_card_with_channel_and_image(
 ) -> Option<(
     CardModel,
     Vec<PublishChannelModel>,
-    Vec<CardSvgModel>,
-    Vec<CardPngModel>,
+    Option<CardSvgModel>,
+    Option<CardPngModel>,
 )> {
     let card: Option<CardModel> = Card::find_by_id(card_id).one(db).await.unwrap();
     card.as_ref()?;
@@ -100,15 +100,7 @@ async fn get_card_with_channel_and_image(
         .all(db)
         .await
         .unwrap();
-    let svgs: Vec<CardSvgModel> = CardSvg::find()
-        .filter(CardSvgColumn::CardId.eq(card_id))
-        .all(db)
-        .await
-        .unwrap();
-    let pngs: Vec<CardPngModel> = CardPng::find()
-        .filter(CardPngColumn::CardId.eq(card_id))
-        .all(db)
-        .await
-        .unwrap();
+    let svgs: Option<CardSvgModel> = CardSvg::find_by_id(card_id).one(db).await.unwrap();
+    let pngs: Option<CardPngModel> = CardPng::find_by_id(card_id).one(db).await.unwrap();
     Some((card, channels, svgs, pngs))
 }
