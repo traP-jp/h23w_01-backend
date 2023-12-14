@@ -57,7 +57,7 @@ pub mod stamps {
 
     #[rocket::get("/<id>/image")]
     pub async fn get_one(
-        id: String,
+        id: &str,
         client: &State<BotClient>,
         _user: AuthUser<'_>,
     ) -> Result<ResponseImage, Status> {
@@ -109,7 +109,7 @@ pub mod users {
 
     #[rocket::get("/<id>/icon")]
     pub async fn get_icon(
-        id: String,
+        id: &str,
         client: &State<BotClient>,
         _user: AuthUser<'_>,
     ) -> Result<ResponseImage, Status> {
