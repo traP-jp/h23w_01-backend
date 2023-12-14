@@ -1,15 +1,10 @@
-use std::str::FromStr;
-
 use chrono::Utc;
-use entity::{
-    card,
-    prelude::*,
-    publish_channel::{self},
-};
+use entity::prelude::*;
 use sea_orm::{
     prelude::{DateTimeUtc, Uuid},
     ActiveValue, Database, DatabaseConnection, EntityTrait, TransactionTrait,
 };
+use std::str::FromStr;
 
 const DATABASE_URL: &str = "mysql://root:pass@localhost:3306";
 const DB_NAME: &str = "/db";
@@ -58,7 +53,7 @@ async fn save_card(
     channels: &[Uuid],
 ) {
     let tx = db.begin().await.unwrap();
-    let card = card::ActiveModel {
+    let card = CardActiveModel {
         id: ActiveValue::Set(Uuid::new_v4()),
         owner_id: ActiveValue::Set(owner_id),
         publish_date: ActiveValue::Set(publish_date.naive_local()),
@@ -66,7 +61,7 @@ async fn save_card(
     };
     let channels = channels
         .iter()
-        .map(|channel_id| publish_channel::ActiveModel {
+        .map(|channel_id| PublishChannelActiveModel {
             id: ActiveValue::Set(*channel_id),
             card_id: ActiveValue::Set(card.id.clone().unwrap()),
         })
@@ -80,7 +75,7 @@ async fn save_card(
     tx.commit().await.unwrap();
 }
 
-async fn search_card_from_channel(db: &DatabaseConnection, channel_id: Uuid) -> Vec<card::Model> {
+async fn search_card_from_channel(db: &DatabaseConnection, channel_id: Uuid) -> Vec<CardModel> {
     let cards = PublishChannel::find_by_id(channel_id)
         .find_with_related(Card)
         .all(db)
