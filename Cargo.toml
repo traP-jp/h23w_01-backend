@@ -12,3 +12,4 @@ thiserror = "1.0.50"
 traq = "0.1.2"
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 chrono = { version = "0.4.31" }
+itertools = "0.12.0"

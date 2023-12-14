@@ -4,6 +4,8 @@ use rocket::form::{self, error::ErrorKind, DataField, Form, FromFormField};
 use rocket::http::Status;
 use rocket::{routes, FromForm, Route};
 
+use crate::auth::AuthUser;
+
 #[derive(Debug, Clone)]
 pub enum FormImage {
     Svg(Vec<u8>),
@@ -45,13 +47,13 @@ pub struct ImageForm {
 }
 
 #[rocket::get("/<id>")]
-pub async fn get_one(id: String) -> Status {
+pub async fn get_one(id: String, _user: AuthUser<'_>) -> Status {
     println!("get image id {}", id);
     Status::NotImplemented
 }
 
 #[rocket::post("/", data = "<form_data>")]
-pub async fn post(form_data: Form<ImageForm>) -> Status {
+pub async fn post(form_data: Form<ImageForm>, _user: AuthUser<'_>) -> Status {
     println!(
         "post image data id={}, image={:?}",
         form_data.id, form_data.image
