@@ -1,13 +1,13 @@
 use std::str::FromStr;
 
-use chrono::Local;
+use chrono::Utc;
 use entity::{
     card,
     prelude::*,
     publish_channel::{self},
 };
 use sea_orm::{
-    prelude::{DateTimeLocal, Uuid},
+    prelude::{DateTimeUtc, Uuid},
     ActiveValue, Database, DatabaseConnection, EntityTrait, TransactionTrait,
 };
 
@@ -21,7 +21,7 @@ async fn main() {
     save_card(
         &db,
         Uuid::new_v4(),
-        Local::now(),
+        Utc::now(),
         Some("oisu---".to_owned()),
         &[
             Uuid::from_str("00000000-0000-0000-0000-000000000000").unwrap(),
@@ -33,7 +33,7 @@ async fn main() {
     save_card(
         &db,
         Uuid::new_v4(),
-        Local::now(),
+        Utc::now(),
         Some("hge".to_owned()),
         &[
             Uuid::from_str("00000000-0000-0000-0000-000000000002").unwrap(),
@@ -53,7 +53,7 @@ async fn main() {
 async fn save_card(
     db: &DatabaseConnection,
     owner_id: Uuid,
-    publish_date: DateTimeLocal,
+    publish_date: DateTimeUtc,
     message: Option<String>,
     channels: &[Uuid],
 ) {
