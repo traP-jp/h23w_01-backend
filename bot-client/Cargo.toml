@@ -1,0 +1,12 @@
+[package]
+name = "bot-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bytes.workspace = true
+reqwest = "0.11.22"
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+traq.workspace = true
