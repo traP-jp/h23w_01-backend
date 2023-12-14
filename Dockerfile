@@ -13,6 +13,7 @@ RUN apt-get -y update \
 WORKDIR /app
 COPY --from=builder /app/target/debug/handler ./main
 COPY --from=builder /app/Rocket.toml ./Rocket.toml
+COPY --from=builder /app/mock-assets ./mock-assets
 
 # TODO: migration
 
