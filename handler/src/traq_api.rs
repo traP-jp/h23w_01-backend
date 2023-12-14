@@ -5,6 +5,8 @@ use rocket::{Request, Route, State};
 
 use bot_client::{BotClient, ImageData};
 
+use crate::auth::AuthUser;
+
 type Routes = Vec<Route>;
 
 pub struct ResponseImage(pub ImageData);
@@ -43,7 +45,10 @@ pub mod stamps {
     type Stamps = Vec<Stamp>;
 
     #[rocket::get("/")]
-    pub async fn get_all(client: &State<BotClient>) -> Result<Json<Stamps>, Status> {
+    pub async fn get_all(
+        client: &State<BotClient>,
+        _user: AuthUser<'_>,
+    ) -> Result<Json<Stamps>, Status> {
         client.get_stamps().await.map(Json).map_err(|e| {
             eprintln!("Error in get_stamps: {}", e);
             Status::InternalServerError
@@ -51,7 +56,11 @@ pub mod stamps {
     }
 
     #[rocket::get("/<id>/image")]
-    pub async fn get_one(id: String, client: &State<BotClient>) -> Result<ResponseImage, Status> {
+    pub async fn get_one(
+        id: String,
+        client: &State<BotClient>,
+        _user: AuthUser<'_>,
+    ) -> Result<ResponseImage, Status> {
         client
             .get_stamp_image(id)
             .await
@@ -76,7 +85,10 @@ pub mod users {
     type Users = Vec<User>;
 
     #[rocket::get("/")]
-    pub async fn get_all(client: &State<BotClient>) -> Result<Json<Users>, Status> {
+    pub async fn get_all(
+        client: &State<BotClient>,
+        _user: AuthUser<'_>,
+    ) -> Result<Json<Users>, Status> {
         client.get_users().await.map(Json).map_err(|e| {
             eprintln!("Error in get_users: {}", e);
             Status::InternalServerError
@@ -84,7 +96,11 @@ pub mod users {
     }
 
     #[rocket::get("/<id>/icon")]
-    pub async fn get_icon(id: String, client: &State<BotClient>) -> Result<ResponseImage, Status> {
+    pub async fn get_icon(
+        id: String,
+        client: &State<BotClient>,
+        _user: AuthUser<'_>,
+    ) -> Result<ResponseImage, Status> {
         client
             .get_user_icon(id)
             .await
@@ -109,7 +125,10 @@ pub mod channels {
     type Channels = Vec<Channel>;
 
     #[rocket::get("/")]
-    pub async fn get_all(client: &State<BotClient>) -> Result<Json<Channels>, Status> {
+    pub async fn get_all(
+        client: &State<BotClient>,
+        _user: AuthUser<'_>,
+    ) -> Result<Json<Channels>, Status> {
         client
             .get_channels()
             .await
