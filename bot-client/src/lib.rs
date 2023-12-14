@@ -65,7 +65,7 @@ impl BotClient {
         Ok(stamp_api::get_stamps(&self.conf, None, None).await?)
     }
 
-    pub async fn get_stamp_image(&self, stamp_id: String) -> Result<ImageData> {
+    pub async fn get_stamp_image(&self, stamp_id: &str) -> Result<ImageData> {
         let conf = &self.conf;
         let token = conf.bearer_access_token.as_ref().unwrap();
         let client = &conf.client;
@@ -91,7 +91,7 @@ impl BotClient {
         Ok(user_api::get_user(&self.conf, user_id).await?)
     }
 
-    pub async fn get_user_icon(&self, user_id: String) -> Result<ImageData> {
+    pub async fn get_user_icon(&self, user_id: &str) -> Result<ImageData> {
         let conf = &self.conf;
         let token = conf.bearer_access_token.as_ref().unwrap();
         let client = &conf.client;
