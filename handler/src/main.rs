@@ -45,6 +45,7 @@ async fn rocket() -> _ {
         .attach(AdHoc::on_response("CORS wrapper", |req, res| {
             Box::pin(async move {
                 use rocket::http::hyper::header::ORIGIN;
+                res.set_header(CORS_CONFIG.render_origin());
                 if req.method() != Method::Options {
                     println!("CORS wrapper: method is not OPTION");
                     return;
@@ -57,7 +58,6 @@ async fn rocket() -> _ {
                     println!("CORS wrapper: header Origin mismatch `{}`", origin);
                     return;
                 }
-                res.set_header(CORS_CONFIG.render_origin());
                 res.set_header(CORS_CONFIG.render_methods());
                 res.set_header(CORS_CONFIG.render_headers());
             })
