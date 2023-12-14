@@ -3,12 +3,12 @@ use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
 
 #[derive(Debug, Clone)]
-pub struct AuthUser {
-    pub id: String,
+pub struct AuthUser<'r> {
+    pub id: &'r str,
 }
 
 #[async_trait]
-impl<'r> FromRequest<'r> for AuthUser {
+impl<'r> FromRequest<'r> for AuthUser<'r> {
     type Error = ();
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
@@ -16,6 +16,6 @@ impl<'r> FromRequest<'r> for AuthUser {
             return Outcome::Error((Status::Unauthorized, ()));
         };
 
-        Outcome::Success(AuthUser { id: id.to_string() })
+        Outcome::Success(AuthUser { id })
     }
 }
