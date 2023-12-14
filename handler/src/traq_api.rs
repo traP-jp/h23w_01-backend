@@ -80,7 +80,7 @@ pub mod stamps {
 pub mod users {
     use super::*;
 
-    use traq::models::User;
+    use traq::models::{User, UserDetail};
 
     type Users = Vec<User>;
 
@@ -91,6 +91,18 @@ pub mod users {
     ) -> Result<Json<Users>, Status> {
         client.get_users().await.map(Json).map_err(|e| {
             eprintln!("Error in get_users: {}", e);
+            Status::InternalServerError
+        })
+    }
+
+    #[rocket::get("/<id>")]
+    pub async fn get_detail(
+        id: String,
+        client: &State<BotClient>,
+        _user: AuthUser<'_>,
+    ) -> Result<Json<UserDetail>, Status> {
+        client.get_user(id).await.map(Json).map_err(|e| {
+            eprintln!("Error in get_user: {}", e);
             Status::InternalServerError
         })
     }
