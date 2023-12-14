@@ -31,15 +31,31 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(CardContent::Table)
+                    .table(CardSvg::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(CardContent::Id)
-                            .uuid()
-                            .not_null()
-                            .primary_key(),
-                    )
-                    .col(ColumnDef::new(CardContent::Svg).string().not_null())
+                    .col(ColumnDef::new(CardSvg::CardId).uuid().not_null())
+                    .col(ColumnDef::new(CardSvg::Content).string().not_null())
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(CardPng::Table)
+                    .if_not_exists()
+                    .col(ColumnDef::new(CardPng::CardId).uuid().not_null())
+                    .col(ColumnDef::new(CardPng::Content).binary().not_null())
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(Image::Table)
+                    .if_not_exists()
+                    .col(ColumnDef::new(Image::Id).uuid().not_null().primary_key())
+                    .col(ColumnDef::new(Image::MimeType).string().not_null())
+                    .col(ColumnDef::new(Image::Content).binary().not_null())
                     .to_owned(),
             )
             .await?;
@@ -54,7 +70,13 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(PublishChannel::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(CardContent::Table).to_owned())
+            .drop_table(Table::drop().table(CardPng::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(CardSvg::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Image::Table).to_owned())
             .await?;
         Ok(())
     }
@@ -77,8 +99,23 @@ enum PublishChannel {
 }
 
 #[derive(DeriveIden)]
-enum CardContent {
+enum CardSvg {
+    Table,
+    CardId,
+    Content,
+}
+
+#[derive(DeriveIden)]
+enum CardPng {
+    Table,
+    CardId,
+    Content,
+}
+
+#[derive(DeriveIden)]
+enum Image {
     Table,
     Id,
-    Svg,
+    MimeType,
+    Content,
 }
