@@ -8,6 +8,9 @@ use uuid::Uuid;
 #[async_trait::async_trait]
 pub trait CardRepository {
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr>;
+    async fn save_image(&self, params: &SaveImageParams) -> Result<(), DbErr>;
+    async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), DbErr>;
+    async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), DbErr>;
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, DbErr>;
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, DbErr>;
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, DbErr>;
@@ -15,6 +18,11 @@ pub trait CardRepository {
 }
 
 pub struct CardRepositoryImpl(DatabaseConnection);
+impl CardRepositoryImpl {
+    pub fn new(db: &DatabaseConnection) -> Self {
+        Self(db.clone())
+    }
+}
 
 #[async_trait::async_trait]
 impl CardRepository for CardRepositoryImpl {
@@ -42,6 +50,18 @@ impl CardRepository for CardRepositoryImpl {
         tx.commit().await?;
         Ok(())
     }
+    async fn save_image(&self, params: &SaveImageParams) -> Result<(), DbErr> {
+        let db = &self.0;
+        let tx = db.begin().await?;
+        let image = ImageActiveModel {
+            id: ActiveValue::Set(params.id),
+            mime_type: ActiveValue::Set(params.mime_type.clone()),
+            content: ActiveValue::Set(params.content.clone()),
+        };
+        Image::insert(image).exec(&tx).await?;
+        tx.commit().await?;
+        Ok(())
+    }
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, DbErr> {
         let db = &self.0;
         let cards = Card::find().all(db).await?;
@@ -66,6 +86,28 @@ impl CardRepository for CardRepositoryImpl {
         Card::delete_by_id(card_id).exec(db).await?;
         Ok(())
     }
+    async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), DbErr> {
+        let db = &self.0;
+        let tx = db.begin().await?;
+        let card_png = CardPngActiveModel {
+            card_id: ActiveValue::Set(card_id),
+            content: ActiveValue::Set(content.to_vec()),
+        };
+        CardPng::insert(card_png).exec(&tx).await?;
+        tx.commit().await?;
+        Ok(())
+    }
+    async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), DbErr> {
+        let db = &self.0;
+        let tx = db.begin().await?;
+        let card_svg = CardSvgActiveModel {
+            card_id: ActiveValue::Set(card_id),
+            content: ActiveValue::Set(content.to_string()),
+        };
+        CardSvg::insert(card_svg).exec(&tx).await?;
+        tx.commit().await?;
+        Ok(())
+    }
 }
 
 pub struct SaveCardParams {
@@ -74,4 +116,10 @@ pub struct SaveCardParams {
     pub publish_date: DateTimeUtc,
     pub message: Option<String>,
     pub channels: Vec<Uuid>,
+}
+
+pub struct SaveImageParams {
+    pub id: Uuid,
+    pub mime_type: String,
+    pub content: Vec<u8>,
 }
