@@ -29,6 +29,10 @@ async fn rocket() -> _ {
     let verification_token =
         env::var("VERIFICATION_TOKEN").expect("env var VERIFICATION_TOKEN is unset");
     let access_token = env::var("BOT_ACCESS_TOKEN").expect("env var BOT_ACCESS_TOKEN is unset");
+    let check_auth = env::var("CHECK_AUTH")
+        .ok()
+        .and_then(|c| c.parse::<bool>().ok())
+        .unwrap_or(true);
     let parser = RequestParser::new(&verification_token);
     let client = BotClient::new(access_token);
     rocket::build()
@@ -42,6 +46,7 @@ async fn rocket() -> _ {
         .mount("/", routes![options])
         .manage(parser)
         .manage(client)
+        .manage(handler::auth::AuthUserConfig(check_auth))
         .attach(AdHoc::on_response("CORS wrapper", |req, res| {
             Box::pin(async move {
                 use rocket::http::hyper::header::ORIGIN;
