@@ -111,7 +111,7 @@ impl<'a> FromData<'a> for Png {
 pub async fn get_all(_user: AuthUser<'_>) -> (Status, Json<Vec<CardResponse>>) {
     // TODO: まだモックなので実装
     let v = vec![mock_card_response().await];
-    (Status::Accepted, Json(v))
+    (Status::Ok, Json(v))
 }
 
 #[rocket::post("/", data = "<card>")]

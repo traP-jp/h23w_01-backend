@@ -11,5 +11,7 @@ async-trait.workspace = true
 rocket = { version = "0.5", features = ["json"] }
 traq-bot-http = "0.8.0"
 traq.workspace = true
+itertools.workspace = true
+once_cell = "1.19.0"
 
 bot-client.path = "../bot-client"
