@@ -4,12 +4,11 @@ use chrono::Local;
 use entity::{
     card,
     prelude::*,
-    publish_channel::{self, Column},
+    publish_channel::{self},
 };
 use sea_orm::{
-    prelude::{ChronoDateTimeLocal, DateTimeLocal, Uuid},
-    sea_query::OnConflict,
-    ActiveModelTrait, ActiveValue, Database, DatabaseConnection, EntityTrait, TransactionTrait,
+    prelude::{DateTimeLocal, Uuid},
+    ActiveValue, Database, DatabaseConnection, EntityTrait, TransactionTrait,
 };
 
 const DATABASE_URL: &str = "mysql://root:pass@localhost:3306";
@@ -64,17 +63,12 @@ async fn save_card(
         owner_id: ActiveValue::Set(owner_id),
         publish_date: ActiveValue::Set(publish_date.naive_local()),
         message: ActiveValue::Set(message),
-        ..Default::default()
     };
     let channels = channels
-        .into_iter()
-        .map(|channel_id| {
-            let channel = publish_channel::ActiveModel {
-                id: ActiveValue::Set(channel_id.clone()),
-                card_id: ActiveValue::Set(card.id.clone().unwrap()),
-                ..Default::default()
-            };
-            channel
+        .iter()
+        .map(|channel_id| publish_channel::ActiveModel {
+            id: ActiveValue::Set(*channel_id),
+            card_id: ActiveValue::Set(card.id.clone().unwrap()),
         })
         .collect::<Vec<_>>();
     Card::insert(card).exec(&tx).await.unwrap();
@@ -94,6 +88,6 @@ async fn search_card_from_channel(db: &DatabaseConnection, channel_id: Uuid) -> 
         .unwrap();
     cards
         .iter()
-        .flat_map(|(a, b)| b.clone())
+        .flat_map(|(_a, b)| b.clone())
         .collect::<Vec<_>>()
 }
