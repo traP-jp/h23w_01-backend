@@ -6,15 +6,15 @@ use hyper::header::{
 };
 
 pub struct CorsConfig {
-    pub origin: String,
+    pub origins: Vec<String>,
     pub methods: Vec<Method>,
     pub headers: Vec<String>,
 }
 
 impl CorsConfig {
-    pub fn new(origin: String) -> Self {
+    pub fn new<'s>(origins: impl Iterator<Item = &'s str>) -> Self {
         Self {
-            origin,
+            origins: origins.map(|s| s.to_string()).collect(),
             methods: vec![],
             headers: vec![],
         }
@@ -30,8 +30,11 @@ impl CorsConfig {
         self
     }
 
-    pub fn render_origin(&self) -> Header<'_> {
-        Header::new(ACCESS_CONTROL_ALLOW_ORIGIN.as_str(), &self.origin)
+    pub fn render_origins<'r>(&self, origin: &'r str) -> Option<Header<'r>> {
+        self.origins
+            .iter()
+            .any(|o| o == origin)
+            .then(|| Header::new(ACCESS_CONTROL_ALLOW_ORIGIN.as_str(), origin))
     }
 
     pub fn render_methods(&self) -> Header<'_> {

@@ -12,11 +12,11 @@ use bot_client::BotClient;
 use handler::cors::{options, CorsConfig};
 
 static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
-    let Ok(origin) = env::var("ALLOWED_ORIGIN") else {
+    let Ok(origins) = env::var("ALLOWED_ORIGINS") else {
         eprintln!("env_var ALLOWED_ORIGIN is unset");
         exit(1);
     };
-    CorsConfig::new(origin)
+    CorsConfig::new(origins.split(' '))
 });
 
 #[get("/ping")]
@@ -45,17 +45,17 @@ async fn rocket() -> _ {
         .attach(AdHoc::on_response("CORS wrapper", |req, res| {
             Box::pin(async move {
                 use rocket::http::hyper::header::ORIGIN;
-                res.set_header(CORS_CONFIG.render_origin());
-                if req.method() != Method::Options {
-                    println!("CORS wrapper: method is not OPTION");
-                    return;
-                }
                 let Some(origin) = req.headers().get_one(ORIGIN.as_str()) else {
-                    println!("CORS wrapper: header Origin not found");
+                    println!("CORS wrapper: Origin not found in request header");
                     return;
                 };
-                if origin != CORS_CONFIG.origin {
-                    println!("CORS wrapper: header Origin mismatch `{}`", origin);
+                let Some(origin_header) = CORS_CONFIG.render_origins(origin) else {
+                    println!("CORS wrapper: Origin `{}` not allowed", origin);
+                    return;
+                };
+                res.set_header(origin_header);
+                if req.method() != Method::Options {
+                    println!("CORS wrapper: method is not OPTION");
                     return;
                 }
                 res.set_header(CORS_CONFIG.render_methods());
