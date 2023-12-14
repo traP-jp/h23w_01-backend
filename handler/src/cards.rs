@@ -151,7 +151,7 @@ pub async fn get_svg(id: String, _user: AuthUser<'_>) -> (Status, Option<NamedFi
     }
     (
         Status::Ok,
-        NamedFile::open("./mock-assets/a.svg").await.ok(),
+        NamedFile::open("./mock-assets/sample.svg").await.ok(),
     )
 }
 
@@ -175,7 +175,7 @@ pub async fn get_png(id: String, _user: AuthUser<'_>) -> (Status, Option<NamedFi
     }
     (
         Status::Ok,
-        NamedFile::open("./mock-assets/a.png").await.ok(),
+        NamedFile::open("./mock-assets/sample.png").await.ok(),
     )
 }
 
