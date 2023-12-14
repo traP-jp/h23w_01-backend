@@ -97,7 +97,7 @@ pub mod users {
 
     #[rocket::get("/<id>")]
     pub async fn get_detail(
-        id: String,
+        id: &str,
         client: &State<BotClient>,
         _user: AuthUser<'_>,
     ) -> Result<Json<UserDetail>, Status> {

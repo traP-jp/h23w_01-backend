@@ -87,8 +87,8 @@ impl BotClient {
         Ok(user_api::get_users(&self.conf, None, None).await?)
     }
 
-    pub async fn get_user(&self, user_id: String) -> Result<UserDetail> {
-        Ok(user_api::get_user(&self.conf, &user_id).await?)
+    pub async fn get_user(&self, user_id: &str) -> Result<UserDetail> {
+        Ok(user_api::get_user(&self.conf, user_id).await?)
     }
 
     pub async fn get_user_icon(&self, user_id: String) -> Result<ImageData> {
