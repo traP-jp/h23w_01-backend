@@ -5,7 +5,6 @@ networks:
 
 services:
   mysql:
-    container_name: h23w1-db
     image: mariadb:10
     restart: always
     environment:
@@ -35,3 +34,17 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+
+  app:
+    build: .
+    image: h23w_01-backend
+    environment:
+      BOT_ACCESS_TOKEN: ${BOT_ACCESS_TOKEN?Variable BOT_ACCESS_TOKEN not set}
+      VERIFICATION_TOKEN: ${VERIFICATION_TOKEN?Variable VERIFICATION_TOKEN not set}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS?Variable ALLOWED_ORIGINS not set}
+      CHECK_AUTH: ${CHECK_AUTH?Variable CHECK_AUTH not set}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
