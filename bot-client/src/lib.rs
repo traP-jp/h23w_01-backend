@@ -61,8 +61,8 @@ impl ImageData {
 }
 
 impl BotClient {
-    pub async fn get_stamps(&self) -> Result<Vec<Stamp>> {
-        Ok(stamp_api::get_stamps(&self.conf, None, None).await?)
+    pub async fn get_stamps(&self, typ: Option<&str>) -> Result<Vec<Stamp>> {
+        Ok(stamp_api::get_stamps(&self.conf, None, typ).await?)
     }
 
     pub async fn get_stamp_image(&self, stamp_id: &str) -> Result<ImageData> {

@@ -44,12 +44,19 @@ pub mod stamps {
 
     type Stamps = Vec<Stamp>;
 
-    #[rocket::get("/")]
+    #[rocket::get("/?<type>")]
     pub async fn get_all(
+        r#type: Option<&str>,
         client: &State<BotClient>,
         _user: AuthUser<'_>,
     ) -> Result<Json<Stamps>, Status> {
-        client.get_stamps().await.map(Json).map_err(|e| {
+        match r#type {
+            Some("original") | Some("unicode") => {}
+            Some(_) => return Err(Status::BadRequest),
+            None => {}
+        }
+
+        client.get_stamps(r#type).await.map(Json).map_err(|e| {
             eprintln!("Error in get_stamps: {}", e);
             Status::InternalServerError
         })
