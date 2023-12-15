@@ -40,26 +40,46 @@ impl<'r, 'o: 'r> Responder<'r, 'o> for ResponseImage {
 pub mod stamps {
     use super::*;
 
+    use rocket::form::{self, FromFormField, ValueField};
     use traq::models::Stamp;
 
     type Stamps = Vec<Stamp>;
 
+    #[derive(Debug, Clone, Copy)]
+    pub struct StampType(bot_client::StampType);
+
+    impl From<bot_client::StampType> for StampType {
+        fn from(t: bot_client::StampType) -> Self {
+            Self(t)
+        }
+    }
+
+    impl<'r> FromFormField<'r> for StampType {
+        fn from_value(field: ValueField<'r>) -> form::Result<'r, Self> {
+            use bot_client::StampType::*;
+            match field.value {
+                "original" => Ok(Self(Original)),
+                "unicode" => Ok(Self(Unicode)),
+                "" => Ok(Self(None)),
+                _ => Err(form::Error::validation("invalid stamp type"))?,
+            }
+        }
+    }
+
     #[rocket::get("/?<type>")]
     pub async fn get_all(
-        r#type: Option<&str>,
+        r#type: Option<StampType>,
         client: &State<BotClient>,
         _user: AuthUser<'_>,
     ) -> Result<Json<Stamps>, Status> {
-        match r#type {
-            Some("original") | Some("unicode") => {}
-            Some(_) => return Err(Status::BadRequest),
-            None => {}
-        }
-
-        client.get_stamps(r#type).await.map(Json).map_err(|e| {
-            eprintln!("Error in get_stamps: {}", e);
-            Status::InternalServerError
-        })
+        client
+            .get_stamps(r#type.unwrap_or(bot_client::StampType::None.into()).0)
+            .await
+            .map(Json)
+            .map_err(|e| {
+                eprintln!("Error in get_stamps: {}", e);
+                Status::InternalServerError
+            })
     }
 
     #[rocket::get("/<id>/image")]
