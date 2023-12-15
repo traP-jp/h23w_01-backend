@@ -17,7 +17,7 @@ impl From<AuthUserConfig> for bool {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AuthUser<'r> {
     pub id: Option<&'r str>,
 }

@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use bytes::Bytes;
 use rocket::data::{Data, FromData, Outcome, ToByteUnit};
 use rocket::fs::NamedFile;
 use rocket::http::Status;
@@ -46,7 +47,8 @@ async fn mock_card_response() -> CardResponse {
     }
 }
 
-pub struct Svg(Vec<u8>);
+#[derive(Debug, Clone)]
+pub struct Svg(String);
 
 #[async_trait]
 impl<'a> FromData<'a> for Svg {
@@ -68,7 +70,7 @@ impl<'a> FromData<'a> for Svg {
                 ),
             ));
         }
-        let Ok(data) = data.open(5.megabytes()).into_bytes().await else {
+        let Ok(data) = data.open(5.megabytes()).into_string().await else {
             return Outcome::Error((
                 Status::InternalServerError,
                 "failed to read request body".to_string(),
@@ -78,7 +80,8 @@ impl<'a> FromData<'a> for Svg {
     }
 }
 
-pub struct Png(Vec<u8>);
+#[derive(Debug, Clone)]
+pub struct Png(Bytes);
 
 #[async_trait]
 impl<'a> FromData<'a> for Png {
@@ -103,7 +106,7 @@ impl<'a> FromData<'a> for Png {
                 "failed to read request body".to_string(),
             ));
         };
-        Outcome::Success(Png(data.into_inner()))
+        Outcome::Success(Png(data.into_inner().into()))
     }
 }
 

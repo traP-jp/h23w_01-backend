@@ -5,6 +5,7 @@ use hyper::header::{
     ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN,
 };
 
+#[derive(Debug, Clone)]
 pub struct CorsConfig {
     pub origins: Vec<String>,
     pub methods: Vec<Method>,

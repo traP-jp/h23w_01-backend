@@ -9,6 +9,7 @@ use crate::auth::AuthUser;
 
 type Routes = Vec<Route>;
 
+#[derive(Debug, Clone)]
 pub struct ResponseImage(pub ImageData);
 
 impl<'r, 'o: 'r> Responder<'r, 'o> for ResponseImage {

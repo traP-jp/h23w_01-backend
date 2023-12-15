@@ -36,7 +36,7 @@
       {
         devShells.default = pkgs.stdenv.mkDerivation {
           name = "h23w_01-backend";
-          nativeBuildInputs = nativeBuildInputs ++ [ toolchain ];
+          nativeBuildInputs = nativeBuildInputs ++ [ toolchain pkgs.sea-orm-cli ];
           inherit buildInputs;
         };
         packages.default = buildRustPackage { };
