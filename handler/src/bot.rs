@@ -5,7 +5,20 @@ use rocket::request::Request;
 
 use traq_bot_http::{Event, RequestParser};
 
+#[derive(Debug, Clone)]
 pub struct BotEvent(pub Event);
+
+impl From<Event> for BotEvent {
+    fn from(value: Event) -> Self {
+        Self(value)
+    }
+}
+
+impl From<BotEvent> for Event {
+    fn from(value: BotEvent) -> Self {
+        value.0
+    }
+}
 
 #[async_trait]
 impl<'a> FromData<'a> for BotEvent {
