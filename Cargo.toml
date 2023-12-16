@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["handler", "repository", "migration", "entity", "bot-client"]
+members = ["handler", "repository", "migration", "entity", "bot-client", "entrypoint"]
 
 [workspace.dependencies]
 tokio = { version = "1.35.0", features = ["full"] }
