@@ -60,9 +60,26 @@ impl ImageData {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StampType {
+    Original,
+    Unicode,
+    None,
+}
+
+impl StampType {
+    fn to_param(self) -> Option<&'static str> {
+        match self {
+            Self::Original => Some("original"),
+            Self::Unicode => Some("unicode"),
+            Self::None => None,
+        }
+    }
+}
+
 impl BotClient {
-    pub async fn get_stamps(&self) -> Result<Vec<Stamp>> {
-        Ok(stamp_api::get_stamps(&self.conf, None, None).await?)
+    pub async fn get_stamps(&self, r#type: StampType) -> Result<Vec<Stamp>> {
+        Ok(stamp_api::get_stamps(&self.conf, None, r#type.to_param()).await?)
     }
 
     pub async fn get_stamp_image(&self, stamp_id: &str) -> Result<ImageData> {
