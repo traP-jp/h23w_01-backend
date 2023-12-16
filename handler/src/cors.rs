@@ -24,6 +24,29 @@ impl CorsConfig {
         }
     }
 
+    pub fn load_env() -> Result<Self, Box<dyn std::error::Error + Send + Sync + 'static>> {
+        use std::env::var;
+        let origins = var("ALLOWED_ORIGINS")?;
+        let allow_credentials = match var("ALLOW_CREDENTIALS") {
+            Ok(c) => c.parse::<bool>()?,
+            Err(_) => true,
+        };
+        let methods = var("ALLOWED_METHODS").unwrap_or_default();
+        let headers = var("ALLOWED_HEADERS").unwrap_or_default();
+        Ok(Self {
+            origins: origins.split(' ').map(|s| s.to_string()).collect(),
+            allow_credentials,
+            methods: methods
+                .split(' ')
+                .map(|s| {
+                    s.parse::<Method>()
+                        .map_err(|_| format!("unknown method name {}", s))
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+            headers: headers.split(' ').map(|s| s.to_string()).collect(),
+        })
+    }
+
     pub fn credentials(self, value: bool) -> Self {
         Self {
             allow_credentials: value,

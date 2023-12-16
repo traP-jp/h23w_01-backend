@@ -12,10 +12,8 @@ use repository::card::{
 
 use handler::cors::{options, CorsConfig};
 
-static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
-    let origins = env::var("ALLOWED_ORIGINS").expect("env_var ALLOWED_ORIGIN is unset");
-    CorsConfig::new(origins.split(' '))
-});
+static CORS_CONFIG: Lazy<CorsConfig> =
+    Lazy::new(|| CorsConfig::load_env().expect("failed to load CORS config"));
 
 #[tokio::main]
 async fn main() -> Result<()> {
