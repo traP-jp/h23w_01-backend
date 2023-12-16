@@ -13,6 +13,7 @@ DB設定
 `MYSQL_HOSTNAME` | MySQLサーバーのホスト名。`localhost`など
 `MYSQL_PORT` | MySQLサーバーのポート。`3306`など
 `MYSQL_DATABASE` | MySQLサーバーのデータベース名。Dockerイメージの`MYSQL_DATABASE`と対応
+`MIGRATION` | アプリ起動時に行うMigrationの設定。`up`, `down`, `refresh`, `none`のいずれか。デフォルトは`none`で何も行わない
 
 ※ `MYSQL_*`の環境変数が見つからなければ`NS_MARIADB_*`の環境変数も探索される。(NeoShowcase対応)
 
