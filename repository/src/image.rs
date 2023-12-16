@@ -1,21 +1,22 @@
 use crate::error::RepositoryError;
+use bytes::Bytes;
 use s3::{creds::Credentials, error::S3Error, Bucket, Region};
 use uuid::Uuid;
 
 #[async_trait::async_trait]
 pub trait ImageRepository {
-    async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), RepositoryError>;
+    async fn save_png(&self, card_id: Uuid, content: &Bytes) -> Result<(), RepositoryError>;
     async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), RepositoryError>;
     async fn save_asset(
         &self,
         id: Uuid,
         mime_type: &str,
-        content: &[u8],
+        content: &Bytes,
     ) -> Result<(), RepositoryError>;
-    async fn get_png(&self, card_id: Uuid) -> Result<Option<Vec<u8>>, RepositoryError>;
+    async fn get_png(&self, card_id: Uuid) -> Result<Option<Bytes>, RepositoryError>;
     async fn get_svg(&self, card_id: Uuid) -> Result<Option<String>, RepositoryError>;
-    async fn get_asset(&self, id: Uuid) -> Result<Option<(String, Vec<u8>)>, RepositoryError>;
-    // async fn update_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), RepositoryError>;
+    async fn get_asset(&self, id: Uuid) -> Result<Option<(String, Bytes)>, RepositoryError>;
+    // async fn update_png(&self, card_id: Uuid, content: Bytes) -> Result<(), RepositoryError>;
     // async fn update_svg(&self, card_id: Uuid, content: &str) -> Result<(), RepositoryError>;
     async fn delete_png(&self, card_id: Uuid) -> Result<(), RepositoryError>;
     async fn delete_svg(&self, card_id: Uuid) -> Result<(), RepositoryError>;
@@ -84,9 +85,9 @@ impl ImageRepositoryImpl {
 
 #[async_trait::async_trait]
 impl ImageRepository for ImageRepositoryImpl {
-    async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), RepositoryError> {
+    async fn save_png(&self, card_id: Uuid, content: &Bytes) -> Result<(), RepositoryError> {
         let bucket = &self.0;
-        let key = card_id.to_string() + ".png";
+        let key = format!("{}.png", card_id);
         bucket
             .put_object_with_content_type(key, content, "image/png")
             .await?;
@@ -94,7 +95,7 @@ impl ImageRepository for ImageRepositoryImpl {
     }
     async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), RepositoryError> {
         let bucket = &self.0;
-        let key = card_id.to_string() + ".svg";
+        let key = format!("{}.svg", card_id);
         bucket
             .put_object_with_content_type(&key, content.as_bytes(), "image/svg+xml")
             .await?;
@@ -104,7 +105,7 @@ impl ImageRepository for ImageRepositoryImpl {
         &self,
         id: Uuid,
         content_type: &str,
-        content: &[u8],
+        content: &Bytes,
     ) -> Result<(), RepositoryError> {
         let bucket = &self.0;
         let key = id.to_string();
@@ -113,19 +114,19 @@ impl ImageRepository for ImageRepositoryImpl {
             .await?;
         Ok(())
     }
-    async fn get_png(&self, card_id: Uuid) -> Result<Option<Vec<u8>>, RepositoryError> {
+    async fn get_png(&self, card_id: Uuid) -> Result<Option<Bytes>, RepositoryError> {
         let bucket = &self.0;
-        let key = card_id.to_string() + ".png";
+        let key = format!("{}.png", card_id);
         let png = bucket.get_object(&key).await;
         match png {
-            Ok(x) => Ok(Some(x.to_vec())),
+            Ok(x) => Ok(Some(Bytes::from(x.to_vec()))),
             Err(S3Error::Http(404, _)) => Ok(None),
             Err(e) => Err(RepositoryError::S3Err(e)),
         }
     }
     async fn get_svg(&self, card_id: Uuid) -> Result<Option<String>, RepositoryError> {
         let bucket = &self.0;
-        let key = card_id.to_string() + ".svg";
+        let key = format!("{}.svg", card_id);
         let svg = bucket.get_object(&key).await;
         match svg {
             Ok(x) => match x.to_string() {
@@ -136,29 +137,28 @@ impl ImageRepository for ImageRepositoryImpl {
             Err(e) => Err(RepositoryError::S3Err(e)),
         }
     }
-    async fn get_asset(&self, id: Uuid) -> Result<Option<(String, Vec<u8>)>, RepositoryError> {
+    async fn get_asset(&self, id: Uuid) -> Result<Option<(String, Bytes)>, RepositoryError> {
         let bucket = &self.0;
         let key = id.to_string();
         let image = bucket.get_object(&key).await;
         match image {
             Ok(x) => Ok(Some((
                 x.headers().get("content-type").unwrap().to_string(),
-                x.to_vec(),
+                Bytes::from(x.to_vec()),
             ))),
             Err(S3Error::Http(404, _)) => Ok(None),
             Err(e) => Err(RepositoryError::S3Err(e)),
         }
     }
-
     async fn delete_png(&self, card_id: Uuid) -> Result<(), RepositoryError> {
         let bucket = &self.0;
-        let key = card_id.to_string() + ".png";
+        let key = format!("{}.png", card_id);
         bucket.delete_object(key).await?;
         Ok(())
     }
-    async fn delete_svg(&self, id: Uuid) -> Result<(), RepositoryError> {
+    async fn delete_svg(&self, card_id: Uuid) -> Result<(), RepositoryError> {
         let bucket = &self.0;
-        let key = id.to_string() + ".svg";
+        let key = format!("{}.svg", card_id);
         bucket.delete_object(key).await?;
         Ok(())
     }

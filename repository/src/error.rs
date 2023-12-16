@@ -11,6 +11,4 @@ pub enum RepositoryError {
     S3Err(#[from] S3Error),
     #[error("Utf8Err: {0}")]
     Utf8Err(#[from] Utf8Error),
-    #[error("NotFound")]
-    NotFound,
 }
