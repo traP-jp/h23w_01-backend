@@ -52,7 +52,7 @@ async fn rocket() -> _ {
     let image_repository = {
         let load = |s: &str| ImageRepositoryConfig::load_env_with_prefix(s);
         let config = load("")
-            .or_else(|_| load("MOCK_"))
+            .or_else(|_| load("MINIO_"))
             .or_else(|_| load("R2_"))
             .expect("env var config for object storage not found");
         ImageRepositoryImpl::new_with_config(config).expect("failed to connect object storage")

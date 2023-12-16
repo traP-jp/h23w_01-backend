@@ -1,6 +1,6 @@
 use crate::error::RepositoryError;
 use bytes::Bytes;
-use s3::{creds::Credentials, error::S3Error, Bucket, Region};
+use s3::{creds::Credentials, error::S3Error, Bucket};
 use uuid::Uuid;
 
 #[async_trait::async_trait]
@@ -25,40 +25,26 @@ pub trait ImageRepository {
 
 pub struct ImageRepositoryConfig {
     pub bucket_name: String,
-    pub region: ImageRepositoryConfigRegion,
+    // endpoint URL
+    pub region: String,
     pub access_key: String,
     pub secret_key: String,
-}
-pub enum ImageRepositoryConfigRegion {
-    R2(String),
-    Mock(String),
 }
 
 impl ImageRepositoryConfig {
     pub fn load_env_with_prefix(prefix: &str) -> Result<Self, std::env::VarError> {
         let var_suff = |suffix: &'static str| std::env::var(format!("{}{}", prefix, suffix));
-        let region = if prefix == "R2_" {
-            ImageRepositoryConfigRegion::R2(var_suff("REGION")?)
-        } else {
-            ImageRepositoryConfigRegion::Mock(var_suff("REGION")?)
-        };
         Ok(Self {
             bucket_name: var_suff("BUCKET_NAME")?,
-            region,
+            region: var_suff("REGION")?,
             access_key: var_suff("ACCESS_KEY")?,
             secret_key: var_suff("SECRET_KEY")?,
         })
     }
     pub fn backet(&self) -> Result<Bucket, RepositoryError> {
-        let region = match &self.region {
-            ImageRepositoryConfigRegion::R2(region) => Region::R2 {
-                account_id: region.to_string(),
-            },
-            ImageRepositoryConfigRegion::Mock(region) => region.parse()?,
-        };
         let bucket = Bucket::new(
             &self.bucket_name,
-            region,
+            self.region.parse()?,
             Credentials::new(
                 Some(&self.access_key),
                 Some(&self.secret_key),
