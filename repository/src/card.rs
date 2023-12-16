@@ -12,7 +12,7 @@ use migration::Migrator;
 
 #[async_trait::async_trait]
 pub trait CardRepository {
-    async fn migrate(&self) -> Result<(), DbErr>;
+    async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), DbErr>;
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr>;
     async fn save_image(&self, params: &SaveImageParams) -> Result<(), DbErr>;
     async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), DbErr>;
@@ -30,6 +30,29 @@ pub struct CardRepositoryConfig {
     pub hostname: String,
     pub port: String,
     pub database: String,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum MigrationStrategy {
+    Up,
+    Down,
+    Refresh,
+    #[default]
+    None,
+}
+
+impl std::str::FromStr for MigrationStrategy {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "up" => Ok(Self::Up),
+            "down" => Ok(Self::Down),
+            "refresh" => Ok(Self::Refresh),
+            "none" => Ok(Self::None),
+            s => Err(format!("unknown strategy `{}`", s)),
+        }
+    }
 }
 
 impl CardRepositoryConfig {
@@ -71,8 +94,13 @@ impl CardRepositoryImpl {
 
 #[async_trait::async_trait]
 impl CardRepository for CardRepositoryImpl {
-    async fn migrate(&self) -> Result<(), DbErr> {
-        Migrator::up(&self.0, None).await
+    async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), DbErr> {
+        match strategy {
+            MigrationStrategy::Up => Migrator::up(&self.0, None).await,
+            MigrationStrategy::Down => Migrator::down(&self.0, None).await,
+            MigrationStrategy::Refresh => Migrator::refresh(&self.0).await,
+            MigrationStrategy::None => Ok(()),
+        }
     }
 
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr> {

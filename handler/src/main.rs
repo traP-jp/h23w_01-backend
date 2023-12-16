@@ -8,7 +8,9 @@ use rocket::{fairing::AdHoc, http::Method};
 use traq_bot_http::RequestParser;
 
 use bot_client::BotClient;
-use repository::card::{CardRepositoryConfig, CardRepositoryImpl};
+use repository::card::{
+    CardRepository, CardRepositoryConfig, CardRepositoryImpl, MigrationStrategy,
+};
 
 use handler::cors::{options, CorsConfig};
 
@@ -46,6 +48,14 @@ async fn rocket() -> _ {
             .await
             .expect("failed to connect database")
     };
+    let migration_strategy = env::var("MIGRATION")
+        .ok()
+        .and_then(|m| m.parse::<MigrationStrategy>().ok())
+        .unwrap_or_default();
+    card_repository
+        .migrate(migration_strategy)
+        .await
+        .expect("failed white migration");
     rocket::build()
         .mount("/api", routes![ping])
         .mount("/api/cards", handler::cards::routes())
