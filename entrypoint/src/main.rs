@@ -1,4 +1,4 @@
-use std::{env, process::exit};
+use std::env;
 
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
@@ -13,10 +13,7 @@ use repository::card::{
 use handler::cors::{options, CorsConfig};
 
 static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
-    let Ok(origins) = env::var("ALLOWED_ORIGINS") else {
-        eprintln!("env_var ALLOWED_ORIGIN is unset");
-        exit(1);
-    };
+    let origins = env::var("ALLOWED_ORIGINS").expect("env_var ALLOWED_ORIGIN is unset");
     CorsConfig::new(origins.split(' '))
 });
 
@@ -74,6 +71,7 @@ async fn main() -> Result<()> {
                     return;
                 };
                 res.set_header(origin_header);
+                res.set_header(CORS_CONFIG.render_credentials());
                 if req.method() != Method::Options {
                     println!("CORS wrapper: method is not OPTION");
                     return;
