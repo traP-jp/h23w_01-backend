@@ -34,7 +34,6 @@ impl MigrationTrait for Migration {
                     .table(CardSvg::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(CardSvg::CardId).uuid().not_null())
-                    .col(ColumnDef::new(CardSvg::Content).string().not_null())
                     .to_owned(),
             )
             .await?;
@@ -44,7 +43,6 @@ impl MigrationTrait for Migration {
                     .table(CardPng::Table)
                     .if_not_exists()
                     .col(ColumnDef::new(CardPng::CardId).uuid().not_null())
-                    .col(ColumnDef::new(CardPng::Content).binary().not_null())
                     .to_owned(),
             )
             .await?;
@@ -55,7 +53,6 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(ColumnDef::new(Image::Id).uuid().not_null().primary_key())
                     .col(ColumnDef::new(Image::MimeType).string().not_null())
-                    .col(ColumnDef::new(Image::Content).binary().not_null())
                     .to_owned(),
             )
             .await?;
@@ -102,14 +99,12 @@ enum PublishChannel {
 enum CardSvg {
     Table,
     CardId,
-    Content,
 }
 
 #[derive(DeriveIden)]
 enum CardPng {
     Table,
     CardId,
-    Content,
 }
 
 #[derive(DeriveIden)]
@@ -117,5 +112,4 @@ enum Image {
     Table,
     Id,
     MimeType,
-    Content,
 }
