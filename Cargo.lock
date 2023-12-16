@@ -833,6 +833,15 @@ dependencies = [
 [[package]]
 name = "entrypoint"
 version = "0.1.0"
+dependencies = [
+ "bot-client",
+ "handler",
+ "once_cell",
+ "repository",
+ "rocket",
+ "tokio",
+ "traq-bot-http",
+]
 
 [[package]]
 name = "equivalent"
@@ -1170,7 +1179,6 @@ dependencies = [
  "bot-client",
  "bytes",
  "itertools",
- "once_cell",
  "repository",
  "rocket",
  "serde",
