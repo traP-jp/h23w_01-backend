@@ -2,12 +2,14 @@ use itertools::Itertools;
 use rocket::http::{hyper, Header, Method, Status};
 
 use hyper::header::{
-    ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN,
+    ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METHODS,
+    ACCESS_CONTROL_ALLOW_ORIGIN,
 };
 
 #[derive(Debug, Clone)]
 pub struct CorsConfig {
     pub origins: Vec<String>,
+    pub allow_credentials: bool,
     pub methods: Vec<Method>,
     pub headers: Vec<String>,
 }
@@ -16,8 +18,16 @@ impl CorsConfig {
     pub fn new<'s>(origins: impl Iterator<Item = &'s str>) -> Self {
         Self {
             origins: origins.map(|s| s.to_string()).collect(),
+            allow_credentials: true,
             methods: vec![],
             headers: vec![],
+        }
+    }
+
+    pub fn credentials(self, value: bool) -> Self {
+        Self {
+            allow_credentials: value,
+            ..self
         }
     }
 
@@ -36,6 +46,13 @@ impl CorsConfig {
             .iter()
             .any(|o| o == origin)
             .then(|| Header::new(ACCESS_CONTROL_ALLOW_ORIGIN.as_str(), origin))
+    }
+
+    pub fn render_credentials(&self) -> Header<'_> {
+        Header::new(
+            ACCESS_CONTROL_ALLOW_CREDENTIALS.as_str(),
+            self.allow_credentials.to_string(),
+        )
     }
 
     pub fn render_methods(&self) -> Header<'_> {
