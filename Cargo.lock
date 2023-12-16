@@ -831,6 +831,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "entrypoint"
+version = "0.1.0"
+dependencies = [
+ "bot-client",
+ "handler",
+ "once_cell",
+ "repository",
+ "rocket",
+ "tokio",
+ "traq-bot-http",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1166,7 +1179,6 @@ dependencies = [
  "bot-client",
  "bytes",
  "itertools",
- "once_cell",
  "repository",
  "rocket",
  "serde",

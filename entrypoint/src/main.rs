@@ -1,10 +1,7 @@
-#[macro_use]
-extern crate rocket;
-
 use std::{env, process::exit};
 
 use once_cell::sync::Lazy;
-use rocket::{fairing::AdHoc, http::Method};
+use rocket::{fairing::AdHoc, http::Method, routes};
 use traq_bot_http::RequestParser;
 
 use bot_client::BotClient;
@@ -22,13 +19,8 @@ static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
     CorsConfig::new(origins.split(' '))
 });
 
-#[get("/ping")]
-fn ping() -> &'static str {
-    "pong"
-}
-
-#[launch]
-async fn rocket() -> _ {
+#[tokio::main]
+async fn main() -> Result<(), rocket::Error> {
     let verification_token =
         env::var("VERIFICATION_TOKEN").expect("env var VERIFICATION_TOKEN is unset");
     let access_token = env::var("BOT_ACCESS_TOKEN").expect("env var BOT_ACCESS_TOKEN is unset");
@@ -57,7 +49,7 @@ async fn rocket() -> _ {
         .await
         .expect("failed white migration");
     rocket::build()
-        .mount("/api", routes![ping])
+        .mount("/api", routes![handler::ping])
         .mount("/api/cards", handler::cards::routes())
         .mount("/api/images", handler::images::routes())
         .mount("/bot", routes![handler::bot::bot_event])
@@ -89,4 +81,7 @@ async fn rocket() -> _ {
                 res.set_header(CORS_CONFIG.render_headers());
             })
         }))
+        .launch()
+        .await?;
+    Ok(())
 }
