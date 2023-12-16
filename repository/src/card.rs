@@ -21,7 +21,7 @@ pub trait CardRepository {
 
 #[derive(Debug, Clone)]
 pub struct CardRepositoryConfig {
-    pub name: String,
+    pub user: String,
     pub password: String,
     pub hostname: String,
     pub port: String,
@@ -32,7 +32,7 @@ impl CardRepositoryConfig {
     pub fn load_env_with_prefix(prefix: &str) -> Result<Self, VarError> {
         let var_suff = |suffix: &'static str| var(format!("{}{}", prefix, suffix));
         Ok(Self {
-            name: var_suff("NAME")?,
+            user: var_suff("USER")?,
             password: var_suff("PASSWORD")?,
             hostname: var_suff("HOSTNAME")?,
             port: var_suff("PORT")?,
@@ -43,7 +43,7 @@ impl CardRepositoryConfig {
     pub fn database_url(&self) -> String {
         format!(
             "mysql://{}:{}@{}:{}/{}",
-            self.name, self.password, self.hostname, self.port, self.database
+            self.user, self.password, self.hostname, self.port, self.database
         )
     }
 }
