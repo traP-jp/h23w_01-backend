@@ -4,10 +4,29 @@
 
 ## 環境変数
 
+DB設定
+
+名前 | 値
+:-- | :--
+`MYSQL_USER` | MySQLのユーザー名。Dockerイメージの`MYSQL_USER`と対応
+`MYSQL_PASSWORD` | MySQLのユーザー パスワード。Dockerイメージの`MYSQL_PASSWORD`と対応
+`MYSQL_HOSTNAME` | MySQLサーバーのホスト名。`localhost`など
+`MYSQL_PORT` | MySQLサーバーのポート。`3306`など
+`MYSQL_DATABASE` | MySQLサーバーのデータベース名。Dockerイメージの`MYSQL_DATABASE`と対応
+
+※ `MYSQL_*`の環境変数が見つからなければ`NS_MARIADB_*`の環境変数も探索される。(NeoShowcase対応)
+
+traQ BOTの設定
+
 名前 | 値
 :-- | :--
 `BOT_ACCESS_TOKEN` | traQ BOTのAccess Token
 `VERIFICATION_TOKEN` | traQ BOTのVerification Token
+
+その他
+
+名前 | 値
+:-- | :--
 `ALLOWED_ORIGINS` | CORSで`Access-Control-Allow-Origin`に含めるOriginのリスト。空白区切り
 `CHECK_AUTH` | 主要なエンドポイントで`X-Forwarded-User`によるユーザーの確認を行うかどうか。`true`または`false`
 
