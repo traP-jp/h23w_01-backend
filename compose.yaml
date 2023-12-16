@@ -45,6 +45,12 @@ services:
       VERIFICATION_TOKEN: ${VERIFICATION_TOKEN?Variable VERIFICATION_TOKEN not set}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS?Variable ALLOWED_ORIGINS not set}
       CHECK_AUTH: ${CHECK_AUTH?Variable CHECK_AUTH not set}
+      MYSQL_USER: ${MYSQL_USER?Variable MYSQL_USER not set}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD?Variable MYSQL_PASSWORD not set}
+      MYSQL_HOSTNAME: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE?Variable MYSQL_DATABASE not set}
+      MIGRATION: ${MIGRATION:-none}
     depends_on:
       mysql:
         condition: service_healthy
