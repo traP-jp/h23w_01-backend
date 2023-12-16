@@ -1,7 +1,7 @@
 use entity::prelude::*;
 use sea_orm::{
-    prelude::DateTimeUtc, ActiveValue, ColumnTrait, DatabaseConnection, DbErr, EntityTrait,
-    QueryFilter, TransactionTrait,
+    prelude::DateTimeUtc, ActiveValue, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
+    DbErr, EntityTrait, QueryFilter, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -21,6 +21,11 @@ pub struct CardRepositoryImpl(DatabaseConnection);
 impl CardRepositoryImpl {
     pub fn new(db: &DatabaseConnection) -> Self {
         Self(db.clone())
+    }
+
+    pub async fn connect(opt: impl Into<ConnectOptions>) -> Result<Self, DbErr> {
+        let conn = Database::connect(opt).await?;
+        Ok(Self(conn))
     }
 }
 
