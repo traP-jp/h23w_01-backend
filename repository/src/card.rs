@@ -1,3 +1,5 @@
+use std::env::{var, VarError};
+
 use entity::prelude::*;
 use sea_orm::{
     prelude::DateTimeUtc, ActiveValue, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
@@ -17,6 +19,35 @@ pub trait CardRepository {
     async fn delete_card(&self, card_id: Uuid) -> Result<(), DbErr>;
 }
 
+#[derive(Debug, Clone)]
+pub struct CardRepositoryConfig {
+    pub name: String,
+    pub password: String,
+    pub hostname: String,
+    pub port: String,
+    pub database: String,
+}
+
+impl CardRepositoryConfig {
+    pub fn load_env_with_prefix(prefix: &str) -> Result<Self, VarError> {
+        let var_suff = |suffix: &'static str| var(format!("{}{}", prefix, suffix));
+        Ok(Self {
+            name: var_suff("NAME")?,
+            password: var_suff("PASSWORD")?,
+            hostname: var_suff("HOSTNAME")?,
+            port: var_suff("PORT")?,
+            database: var_suff("DATABASE")?,
+        })
+    }
+
+    pub fn database_url(&self) -> String {
+        format!(
+            "mysql://{}:{}@{}:{}/{}",
+            self.name, self.password, self.hostname, self.port, self.database
+        )
+    }
+}
+
 pub struct CardRepositoryImpl(DatabaseConnection);
 impl CardRepositoryImpl {
     pub fn new(db: &DatabaseConnection) -> Self {
@@ -24,8 +55,13 @@ impl CardRepositoryImpl {
     }
 
     pub async fn connect(opt: impl Into<ConnectOptions>) -> Result<Self, DbErr> {
-        let conn = Database::connect(opt).await?;
-        Ok(Self(conn))
+        let db = Database::connect(opt).await?;
+        Ok(Self(db))
+    }
+
+    pub async fn connect_with_config(config: CardRepositoryConfig) -> Result<Self, DbErr> {
+        let url = config.database_url();
+        Self::connect(url).await
     }
 }
 
