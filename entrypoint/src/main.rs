@@ -1,5 +1,6 @@
 use std::{env, process::exit};
 
+use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use rocket::{fairing::AdHoc, http::Method, routes};
 use traq_bot_http::RequestParser;
@@ -20,10 +21,10 @@ static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
 });
 
 #[tokio::main]
-async fn main() -> Result<(), rocket::Error> {
+async fn main() -> Result<()> {
     let verification_token =
-        env::var("VERIFICATION_TOKEN").expect("env var VERIFICATION_TOKEN is unset");
-    let access_token = env::var("BOT_ACCESS_TOKEN").expect("env var BOT_ACCESS_TOKEN is unset");
+        env::var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
+    let access_token = env::var("BOT_ACCESS_TOKEN").context("env var BOT_ACCESS_TOKEN is unset")?;
     let check_auth = env::var("CHECK_AUTH")
         .ok()
         .and_then(|c| c.parse::<bool>().ok())
@@ -35,10 +36,10 @@ async fn main() -> Result<(), rocket::Error> {
         let config = load("")
             .or_else(|_| load("MYSQL_"))
             .or_else(|_| load("NS_MARIADB_"))
-            .expect("env var config for database not found");
+            .context("env var config for database not found")?;
         CardRepositoryImpl::connect_with_config(config)
             .await
-            .expect("failed to connect database")
+            .context("failed to connect database")?
     };
     let migration_strategy = env::var("MIGRATION")
         .ok()
@@ -47,7 +48,7 @@ async fn main() -> Result<(), rocket::Error> {
     card_repository
         .migrate(migration_strategy)
         .await
-        .expect("failed white migration");
+        .context("failed white migration")?;
     rocket::build()
         .mount("/api", routes![handler::ping])
         .mount("/api/cards", handler::cards::routes())

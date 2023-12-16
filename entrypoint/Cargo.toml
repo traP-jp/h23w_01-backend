@@ -14,3 +14,4 @@ traq-bot-http.workspace = true
 bot-client.path = "../bot-client"
 handler.path = "../handler"
 repository.path = "../repository"
+anyhow = "1.0.75"
