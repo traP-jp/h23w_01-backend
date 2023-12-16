@@ -10,3 +10,7 @@ serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 traq.workspace = true
+
+domain.path = "../domain"
+shaku.workspace = true
+async-trait.workspace = true

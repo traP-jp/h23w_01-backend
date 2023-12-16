@@ -1,16 +1,19 @@
-use std::{env, process::exit};
+use std::{env, process::exit, sync::Arc};
 
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use rocket::{fairing::AdHoc, http::Method, routes};
 use traq_bot_http::RequestParser;
 
-use bot_client::BotClient;
+use bot_client::BotClientImpl;
 use repository::card::{
     CardRepository, CardRepositoryConfig, CardRepositoryImpl, MigrationStrategy,
 };
 
-use handler::cors::{options, CorsConfig};
+use handler::{
+    cors::{options, CorsConfig},
+    traq_api::BotClientWrapper,
+};
 
 static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
     let Ok(origins) = env::var("ALLOWED_ORIGINS") else {
@@ -30,7 +33,8 @@ async fn main() -> Result<()> {
         .and_then(|c| c.parse::<bool>().ok())
         .unwrap_or(true);
     let parser = RequestParser::new(&verification_token);
-    let client = BotClient::new(access_token);
+    let client = BotClientImpl::new(access_token);
+    let client = BotClientWrapper(client);
     let card_repository = {
         let load = |s: &str| CardRepositoryConfig::load_env_with_prefix(s);
         let config = load("")
@@ -59,7 +63,7 @@ async fn main() -> Result<()> {
         .mount("/api/channels", handler::traq_api::channels::routes())
         .mount("/", routes![options])
         .manage(parser)
-        .manage(client)
+        .manage(Arc::new(client))
         .manage(handler::auth::AuthUserConfig(check_auth))
         .manage(card_repository)
         .attach(AdHoc::on_response("CORS wrapper", |req, res| {

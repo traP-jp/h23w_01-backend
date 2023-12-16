@@ -23,3 +23,4 @@ chrono = { version = "0.4.31" }
 itertools = "0.12.0"
 rocket = { version = "0.5", features = ["json"] }
 traq-bot-http = "0.8.0"
+shaku = "0.6.1"

@@ -13,6 +13,8 @@ traq-bot-http.workspace = true
 traq.workspace = true
 itertools.workspace = true
 bytes.workspace = true
+shaku.workspace = true
 
-bot-client.path = "../bot-client"
 repository.path = "../repository"
+domain.path = "../domain"
+anyhow = "1.0.75"

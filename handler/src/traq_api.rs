@@ -1,13 +1,50 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
 use rocket::http::Status;
 use rocket::response::{Responder, Response};
 use rocket::serde::json::Json;
 use rocket::{Request, Route, State};
 
-use bot_client::{BotClient, ImageData};
+// use bot_client::{BotClientImpl, ImageData};
+use domain::bot_client::StampType as RawStampType;
+use domain::bot_client::{BotClient, ImageData};
+use traq::models::{ChannelList, Stamp, User, UserDetail};
 
 use crate::auth::AuthUser;
 
 type Routes = Vec<Route>;
+
+type DynamicBotClient = Arc<dyn BotClient<Error = anyhow::Error>>;
+
+pub struct BotClientWrapper<T: BotClient>(pub T);
+
+#[async_trait]
+impl<E, T: BotClient<Error = E>> BotClient for BotClientWrapper<T>
+where
+    anyhow::Error: From<E>,
+{
+    type Error = anyhow::Error;
+
+    async fn get_stamps(&self, stamp_type: RawStampType) -> anyhow::Result<Vec<Stamp>> {
+        Ok(self.0.get_stamps(stamp_type).await?)
+    }
+    async fn get_stamp_image(&self, stamp_id: &str) -> anyhow::Result<ImageData> {
+        Ok(self.0.get_stamp_image(stamp_id).await?)
+    }
+    async fn get_users(&self) -> anyhow::Result<Vec<User>> {
+        Ok(self.0.get_users().await?)
+    }
+    async fn get_user(&self, user_id: &str) -> anyhow::Result<UserDetail> {
+        Ok(self.0.get_user(user_id).await?)
+    }
+    async fn get_user_icon(&self, user_id: &str) -> anyhow::Result<ImageData> {
+        Ok(self.0.get_user_icon(user_id).await?)
+    }
+    async fn get_channels(&self) -> anyhow::Result<ChannelList> {
+        Ok(self.0.get_channels().await?)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct ResponseImage(pub ImageData);
@@ -47,17 +84,17 @@ pub mod stamps {
     type Stamps = Vec<Stamp>;
 
     #[derive(Debug, Clone, Copy)]
-    pub struct StampType(bot_client::StampType);
+    pub struct StampType(RawStampType);
 
-    impl From<bot_client::StampType> for StampType {
-        fn from(t: bot_client::StampType) -> Self {
+    impl From<RawStampType> for StampType {
+        fn from(t: RawStampType) -> Self {
             Self(t)
         }
     }
 
     impl<'r> FromFormField<'r> for StampType {
         fn from_value(field: ValueField<'r>) -> form::Result<'r, Self> {
-            use bot_client::StampType::*;
+            use RawStampType::*;
             match field.value {
                 "original" => Ok(Self(Original)),
                 "unicode" => Ok(Self(Unicode)),
@@ -70,11 +107,11 @@ pub mod stamps {
     #[rocket::get("/?<type>")]
     pub async fn get_all(
         r#type: Option<StampType>,
-        client: &State<BotClient>,
+        client: &State<DynamicBotClient>,
         _user: AuthUser<'_>,
     ) -> Result<Json<Stamps>, Status> {
         client
-            .get_stamps(r#type.unwrap_or(bot_client::StampType::None.into()).0)
+            .get_stamps(r#type.unwrap_or(RawStampType::None.into()).0)
             .await
             .map(Json)
             .map_err(|e| {
@@ -86,7 +123,7 @@ pub mod stamps {
     #[rocket::get("/<id>/image")]
     pub async fn get_one(
         id: &str,
-        client: &State<BotClient>,
+        client: &State<DynamicBotClient>,
         _user: AuthUser<'_>,
     ) -> Result<ResponseImage, Status> {
         client
@@ -106,6 +143,7 @@ pub mod stamps {
 }
 
 pub mod users {
+
     use super::*;
 
     use traq::models::{User, UserDetail};
@@ -114,7 +152,7 @@ pub mod users {
 
     #[rocket::get("/")]
     pub async fn get_all(
-        client: &State<BotClient>,
+        client: &State<DynamicBotClient>,
         _user: AuthUser<'_>,
     ) -> Result<Json<Users>, Status> {
         client.get_users().await.map(Json).map_err(|e| {
@@ -126,7 +164,7 @@ pub mod users {
     #[rocket::get("/<id>")]
     pub async fn get_detail(
         id: &str,
-        client: &State<BotClient>,
+        client: &State<DynamicBotClient>,
         _user: AuthUser<'_>,
     ) -> Result<Json<UserDetail>, Status> {
         client.get_user(id).await.map(Json).map_err(|e| {
@@ -138,7 +176,7 @@ pub mod users {
     #[rocket::get("/<id>/icon")]
     pub async fn get_icon(
         id: &str,
-        client: &State<BotClient>,
+        client: &State<DynamicBotClient>,
         _user: AuthUser<'_>,
     ) -> Result<ResponseImage, Status> {
         client
@@ -166,7 +204,7 @@ pub mod channels {
 
     #[rocket::get("/")]
     pub async fn get_all(
-        client: &State<BotClient>,
+        client: &State<DynamicBotClient>,
         _user: AuthUser<'_>,
     ) -> Result<Json<Channels>, Status> {
         client
