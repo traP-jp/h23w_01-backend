@@ -7,17 +7,14 @@ publish = false
 [dependencies]
 tokio.workspace = true
 serde.workspace = true
-entity = { path = "../entity" }
 async-trait.workspace = true
 uuid.workspace = true
 chrono.workspace = true
+sea-orm-migration = "0.12.9"
+
+entity.path = "../entity"
+migration.path = "../migration"
 
 [dependencies.sea-orm]
 version = "0.12.9"
-features = [
-    "sqlx-mysql",
-    "runtime-tokio-native-tls",
-    "macros",
-    "with-chrono",
-    "with-uuid",
-]
+features = ["sqlx-mysql", "runtime-tokio-native-tls", "macros", "with-chrono", "with-uuid"]

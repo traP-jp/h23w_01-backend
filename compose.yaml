@@ -8,8 +8,10 @@ services:
     image: mariadb:10
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: pass
-      MYSQL_DATABASE: db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-pass}
+      MYSQL_USER: ${MYSQL_USER?Variable MYSQL_USER not set}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD?Variable MYSQL_PASSWORD not set}
+      MYSQL_DATABASE: ${MYSQL_DATABASE?Variable MYSQL_DATABASE not set}
     command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
     expose:
       - 3306
@@ -43,6 +45,12 @@ services:
       VERIFICATION_TOKEN: ${VERIFICATION_TOKEN?Variable VERIFICATION_TOKEN not set}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS?Variable ALLOWED_ORIGINS not set}
       CHECK_AUTH: ${CHECK_AUTH?Variable CHECK_AUTH not set}
+      MYSQL_USER: ${MYSQL_USER?Variable MYSQL_USER not set}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD?Variable MYSQL_PASSWORD not set}
+      MYSQL_HOSTNAME: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE?Variable MYSQL_DATABASE not set}
+      MIGRATION: ${MIGRATION:-none}
     depends_on:
       mysql:
         condition: service_healthy

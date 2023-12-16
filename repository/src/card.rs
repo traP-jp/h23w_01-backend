@@ -1,12 +1,18 @@
+use std::env::{var, VarError};
+
 use entity::prelude::*;
 use sea_orm::{
-    prelude::DateTimeUtc, ActiveValue, ColumnTrait, DatabaseConnection, DbErr, EntityTrait,
-    QueryFilter, TransactionTrait,
+    prelude::DateTimeUtc, ActiveValue, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
+    DbErr, EntityTrait, QueryFilter, TransactionTrait,
 };
+use sea_orm_migration::MigratorTrait;
 use uuid::Uuid;
+
+use migration::Migrator;
 
 #[async_trait::async_trait]
 pub trait CardRepository {
+    async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), DbErr>;
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr>;
     async fn save_image(&self, params: &SaveImageParams) -> Result<(), DbErr>;
     async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), DbErr>;
@@ -17,15 +23,86 @@ pub trait CardRepository {
     async fn delete_card(&self, card_id: Uuid) -> Result<(), DbErr>;
 }
 
+#[derive(Debug, Clone)]
+pub struct CardRepositoryConfig {
+    pub user: String,
+    pub password: String,
+    pub hostname: String,
+    pub port: String,
+    pub database: String,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum MigrationStrategy {
+    Up,
+    Down,
+    Refresh,
+    #[default]
+    None,
+}
+
+impl std::str::FromStr for MigrationStrategy {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "up" => Ok(Self::Up),
+            "down" => Ok(Self::Down),
+            "refresh" => Ok(Self::Refresh),
+            "none" => Ok(Self::None),
+            s => Err(format!("unknown strategy `{}`", s)),
+        }
+    }
+}
+
+impl CardRepositoryConfig {
+    pub fn load_env_with_prefix(prefix: &str) -> Result<Self, VarError> {
+        let var_suff = |suffix: &'static str| var(format!("{}{}", prefix, suffix));
+        Ok(Self {
+            user: var_suff("USER")?,
+            password: var_suff("PASSWORD")?,
+            hostname: var_suff("HOSTNAME")?,
+            port: var_suff("PORT")?,
+            database: var_suff("DATABASE")?,
+        })
+    }
+
+    pub fn database_url(&self) -> String {
+        format!(
+            "mysql://{}:{}@{}:{}/{}",
+            self.user, self.password, self.hostname, self.port, self.database
+        )
+    }
+}
+
 pub struct CardRepositoryImpl(DatabaseConnection);
 impl CardRepositoryImpl {
     pub fn new(db: &DatabaseConnection) -> Self {
         Self(db.clone())
     }
+
+    pub async fn connect(opt: impl Into<ConnectOptions>) -> Result<Self, DbErr> {
+        let db = Database::connect(opt).await?;
+        Ok(Self(db))
+    }
+
+    pub async fn connect_with_config(config: CardRepositoryConfig) -> Result<Self, DbErr> {
+        let url = config.database_url();
+        Self::connect(url).await
+    }
 }
 
 #[async_trait::async_trait]
 impl CardRepository for CardRepositoryImpl {
+    async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), DbErr> {
+        match strategy {
+            MigrationStrategy::Up => Migrator::up(&self.0, None).await,
+            MigrationStrategy::Down => Migrator::down(&self.0, None).await,
+            MigrationStrategy::Refresh => Migrator::refresh(&self.0).await,
+            MigrationStrategy::None => Ok(()),
+        }
+    }
+
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr> {
         // TODO: 画像の保存
         let db = &self.0;

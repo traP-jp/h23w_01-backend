@@ -8,6 +8,9 @@ use rocket::{fairing::AdHoc, http::Method};
 use traq_bot_http::RequestParser;
 
 use bot_client::BotClient;
+use repository::card::{
+    CardRepository, CardRepositoryConfig, CardRepositoryImpl, MigrationStrategy,
+};
 
 use handler::cors::{options, CorsConfig};
 
@@ -35,6 +38,24 @@ async fn rocket() -> _ {
         .unwrap_or(true);
     let parser = RequestParser::new(&verification_token);
     let client = BotClient::new(access_token);
+    let card_repository = {
+        let load = |s: &str| CardRepositoryConfig::load_env_with_prefix(s);
+        let config = load("")
+            .or_else(|_| load("MYSQL_"))
+            .or_else(|_| load("NS_MARIADB_"))
+            .expect("env var config for database not found");
+        CardRepositoryImpl::connect_with_config(config)
+            .await
+            .expect("failed to connect database")
+    };
+    let migration_strategy = env::var("MIGRATION")
+        .ok()
+        .and_then(|m| m.parse::<MigrationStrategy>().ok())
+        .unwrap_or_default();
+    card_repository
+        .migrate(migration_strategy)
+        .await
+        .expect("failed white migration");
     rocket::build()
         .mount("/api", routes![ping])
         .mount("/api/cards", handler::cards::routes())
@@ -47,6 +68,7 @@ async fn rocket() -> _ {
         .manage(parser)
         .manage(client)
         .manage(handler::auth::AuthUserConfig(check_auth))
+        .manage(card_repository)
         .attach(AdHoc::on_response("CORS wrapper", |req, res| {
             Box::pin(async move {
                 use rocket::http::hyper::header::ORIGIN;
