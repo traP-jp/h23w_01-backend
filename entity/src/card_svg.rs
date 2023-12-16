@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub card_id: Uuid,
-    pub content: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
