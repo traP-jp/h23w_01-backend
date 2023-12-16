@@ -1,11 +1,24 @@
 # https://rocket.rs/v0.5/guide/configuration/#rockettoml
+# https://rocket.rs/v0.5/guide/configuration/#configuration
 [default]
 address = "0.0.0.0"
 port = 8000
-limits = { json = "10MiB" }
+keep_alive = 0
+
+[default.limits]
+# https://api.rocket.rs/v0.5/rocket/data/struct.Limits.html#impl-Default
+form = "1MiB"
+data-form = "10MiB"
+file = "10MiB"
+string = "1MiB"
+bytes = "1MiB"
+json = "5MiB"
+msgpack = "1MiB"
 
 ## set only when compiled in debug mode, i.e, `cargo build`
 [debug]
+cli_colors = true
 
 ## set only when compiled in release mode, i.e, `cargo build --release`
 [release]
+cli_colors = false
