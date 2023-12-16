@@ -1,15 +1,10 @@
 use chrono::Utc;
-use entity::prelude::*;
 use repository::{
     card::{CardRepository, CardRepositoryImpl, SaveCardParams},
     image::{ImageRepository, ImageRepositoryImpl},
 };
 use s3::{creds::Credentials, Bucket, Region};
-use sea_orm::{
-    prelude::{DateTimeUtc, Uuid},
-    ActiveValue, ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter,
-    TransactionTrait,
-};
+use sea_orm::{prelude::Uuid, Database};
 
 const DATABASE_URL: &str = "mysql://root:pass@localhost:3306";
 const DB_NAME: &str = "/db";
