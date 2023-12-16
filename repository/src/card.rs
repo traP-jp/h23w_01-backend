@@ -5,10 +5,14 @@ use sea_orm::{
     prelude::DateTimeUtc, ActiveValue, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
     DbErr, EntityTrait, QueryFilter, TransactionTrait,
 };
+use sea_orm_migration::MigratorTrait;
 use uuid::Uuid;
+
+use migration::Migrator;
 
 #[async_trait::async_trait]
 pub trait CardRepository {
+    async fn migrate(&self) -> Result<(), DbErr>;
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr>;
     async fn save_image(&self, params: &SaveImageParams) -> Result<(), DbErr>;
     async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), DbErr>;
@@ -67,6 +71,10 @@ impl CardRepositoryImpl {
 
 #[async_trait::async_trait]
 impl CardRepository for CardRepositoryImpl {
+    async fn migrate(&self) -> Result<(), DbErr> {
+        Migrator::up(&self.0, None).await
+    }
+
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr> {
         // TODO: 画像の保存
         let db = &self.0;
