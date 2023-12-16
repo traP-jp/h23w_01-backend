@@ -44,7 +44,7 @@ async fn rocket() -> _ {
             .expect("env var config for database not found");
         CardRepositoryImpl::connect_with_config(config)
             .await
-            .unwrap_or_else(|e| panic!("failed to connecto database: {}", e))
+            .expect("failed to connect database")
     };
     rocket::build()
         .mount("/api", routes![ping])
