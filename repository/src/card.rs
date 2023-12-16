@@ -1,23 +1,22 @@
-use std::env::{var, VarError};
-
+use crate::error::RepositoryError;
 use entity::prelude::*;
+use migration::Migrator;
 use sea_orm::{
     prelude::DateTimeUtc, ActiveValue, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
     DbErr, EntityTrait, QueryFilter, TransactionTrait,
 };
 use sea_orm_migration::MigratorTrait;
+use std::env::{var, VarError};
 use uuid::Uuid;
-
-use migration::Migrator;
 
 #[async_trait::async_trait]
 pub trait CardRepository {
     async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), DbErr>;
-    async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr>;
-    async fn get_all_cards(&self) -> Result<Vec<CardModel>, DbErr>;
-    async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, DbErr>;
-    async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, DbErr>;
-    async fn delete_card(&self, card_id: Uuid) -> Result<(), DbErr>;
+    async fn save_card(&self, params: &SaveCardParams) -> Result<(), RepositoryError>;
+    async fn get_all_cards(&self) -> Result<Vec<CardModel>, RepositoryError>;
+    async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, RepositoryError>;
+    async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, RepositoryError>;
+    async fn delete_card(&self, card_id: Uuid) -> Result<(), RepositoryError>;
 }
 
 #[derive(Debug, Clone)]
@@ -78,12 +77,14 @@ impl CardRepositoryImpl {
         Self(db.clone())
     }
 
-    pub async fn connect(opt: impl Into<ConnectOptions>) -> Result<Self, DbErr> {
+    pub async fn connect(opt: impl Into<ConnectOptions>) -> Result<Self, RepositoryError> {
         let db = Database::connect(opt).await?;
         Ok(Self(db))
     }
 
-    pub async fn connect_with_config(config: CardRepositoryConfig) -> Result<Self, DbErr> {
+    pub async fn connect_with_config(
+        config: CardRepositoryConfig,
+    ) -> Result<Self, RepositoryError> {
         let url = config.database_url();
         Self::connect(url).await
     }
@@ -100,7 +101,7 @@ impl CardRepository for CardRepositoryImpl {
         }
     }
 
-    async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr> {
+    async fn save_card(&self, params: &SaveCardParams) -> Result<(), RepositoryError> {
         // TODO: 画像の保存
         let db = &self.0;
         let tx = db.begin().await?;
@@ -125,13 +126,13 @@ impl CardRepository for CardRepositoryImpl {
         Ok(())
     }
 
-    async fn get_all_cards(&self) -> Result<Vec<CardModel>, DbErr> {
+    async fn get_all_cards(&self) -> Result<Vec<CardModel>, RepositoryError> {
         let db = &self.0;
         let cards = Card::find().all(db).await?;
         Ok(cards)
     }
 
-    async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, DbErr> {
+    async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, RepositoryError> {
         let db = &self.0;
         let cards = Card::find()
             .filter(CardColumn::Id.contains(user_id))
@@ -139,12 +140,12 @@ impl CardRepository for CardRepositoryImpl {
             .await?;
         Ok(cards)
     }
-    async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, DbErr> {
+    async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, RepositoryError> {
         let db = &self.0;
         let card = Card::find_by_id(card_id).one(db).await?;
         Ok(card)
     }
-    async fn delete_card(&self, card_id: Uuid) -> Result<(), DbErr> {
+    async fn delete_card(&self, card_id: Uuid) -> Result<(), RepositoryError> {
         let db = &self.0;
         Card::delete_by_id(card_id).exec(db).await?;
         Ok(())
