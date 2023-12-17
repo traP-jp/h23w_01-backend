@@ -169,12 +169,33 @@ async fn complete_card_response(
 #[rocket::get("/")]
 pub async fn get_all(
     card_repo: &State<CR>,
-    _user: AuthUser<'_>,
+    bot_client: &State<BC>,
+    user: AuthUser<'_>,
 ) -> Result<(Status, Json<Vec<CardResponse>>), Status> {
-    let card_models = card_repo.0.get_all_cards().await.map_err(|e| {
-        eprintln!("Error in get all cards: {}", e);
+    use uuid::uuid;
+
+    let name = user.id.ok_or(Status::Unauthorized)?;
+    let mut users = bot_client.0.get_users(Some(name)).await.map_err(|e| {
+        eprintln!("error while get_users by name={}: {}", name, e);
         Status::InternalServerError
     })?;
+    let user_id = users
+        .pop()
+        .map(|u| u.id)
+        .unwrap_or(uuid!("00000000-0000-0000-0000-000000000000"));
+    let now = chrono::Utc::now();
+
+    let card_models: Vec<_> = card_repo
+        .0
+        .get_all_cards()
+        .await
+        .map_err(|e| {
+            eprintln!("Error in get all cards: {}", e);
+            Status::InternalServerError
+        })?
+        .into_iter()
+        .filter(|c| c.id == user_id || c.publish_date < now)
+        .collect();
     let response = complete_card_response(&card_models, card_repo)
         .await
         .map_err(|e| {
