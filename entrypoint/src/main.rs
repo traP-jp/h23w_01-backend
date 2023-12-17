@@ -1,5 +1,3 @@
-use std::{env, process::exit, sync::Arc};
-
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use rocket::{fairing::AdHoc, http::Method, routes};
@@ -18,11 +16,14 @@ static CORS_CONFIG: Lazy<CorsConfig> =
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    use std::env::var;
+
     use handler::{cards::CR, traq_api::BC};
+
     let verification_token =
-        env::var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
-    let access_token = env::var("BOT_ACCESS_TOKEN").context("env var BOT_ACCESS_TOKEN is unset")?;
-    let check_auth = env::var("CHECK_AUTH")
+        var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
+    let access_token = var("BOT_ACCESS_TOKEN").context("env var BOT_ACCESS_TOKEN is unset")?;
+    let check_auth = var("CHECK_AUTH")
         .ok()
         .and_then(|c| c.parse::<bool>().ok())
         .unwrap_or(true);
@@ -39,7 +40,7 @@ async fn main() -> Result<()> {
             .await
             .context("failed to connect database")?
     };
-    let migration_strategy = env::var("MIGRATION")
+    let migration_strategy = var("MIGRATION")
         .ok()
         .and_then(|m| m.parse::<MigrationStrategy>().ok())
         .unwrap_or_default();
@@ -58,7 +59,7 @@ async fn main() -> Result<()> {
         .mount("/api/channels", handler::traq_api::channels::routes())
         .mount("/", routes![options])
         .manage(parser)
-        .manage(Arc::new(client))
+        .manage(client)
         .manage(handler::auth::AuthUserConfig(check_auth))
         .manage(card_repository)
         .attach(AdHoc::on_response("CORS wrapper", |req, res| {
