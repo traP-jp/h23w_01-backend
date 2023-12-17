@@ -14,6 +14,7 @@ sea-orm-migration = "0.12.9"
 
 entity.path = "../entity"
 migration.path = "../migration"
+domain.path = "../domain"
 
 [dependencies.sea-orm]
 version = "0.12.9"

@@ -819,9 +819,12 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes",
+ "chrono",
  "mockall",
+ "serde",
  "shaku",
  "traq",
+ "uuid",
 ]
 
 [[package]]
@@ -858,6 +861,7 @@ dependencies = [
 name = "entity"
 version = "0.1.0"
 dependencies = [
+ "domain",
  "sea-orm",
  "serde",
 ]
@@ -2332,6 +2336,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "domain",
  "entity",
  "migration",
  "sea-orm",
