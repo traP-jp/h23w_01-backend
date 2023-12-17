@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use mockall::automock;
 use shaku::Interface;
-use traq::models::{ChannelList, Stamp, User, UserDetail};
+pub use traq::models::{ChannelList, Stamp, User, UserDetail};
 
 #[automock(type Error = String;)]
 #[async_trait]
