@@ -61,6 +61,9 @@ where
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), Self::Error> {
         Ok(self.0.save_card(params).await?)
     }
+    async fn update_card(&self, params: &SaveCardParams) -> Result<Option<()>, Self::Error> {
+        Ok(self.0.update_card(params).await?)
+    }
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, Self::Error> {
         Ok(self.0.get_all_cards().await?)
     }

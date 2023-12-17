@@ -101,6 +101,26 @@ impl CardRepository for CardRepositoryImpl {
         Ok(())
     }
 
+    async fn update_card(&self, params: &SaveCardParams) -> Result<Option<()>, RepositoryError> {
+        let db = &self.0;
+        let tx = db.begin().await?;
+        let card = CardActiveModel {
+            id: ActiveValue::Set(params.id),
+            owner_id: ActiveValue::Set(params.owner_id),
+            publish_date: ActiveValue::Set(params.publish_date),
+            message: ActiveValue::Set(params.message.clone()),
+        };
+        let result = Card::update(card)
+            .filter(CardColumn::Id.contains(params.id))
+            .exec(&tx)
+            .await;
+        match result {
+            Ok(_) => Ok(Some(())),
+            Err(DbErr::RecordNotFound(_)) => Ok(None),
+            Err(e) => Err(RepositoryError::DbErr(e)),
+        }
+    }
+
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, RepositoryError> {
         let db = &self.0;
         let cards = Card::find()

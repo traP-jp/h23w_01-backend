@@ -17,6 +17,7 @@ pub trait CardRepository: Interface {
         end: DateTimeUtc,
     ) -> Result<Vec<(CardModel, Vec<PublishChannelModel>)>, Self::Error>;
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), Self::Error>;
+    async fn update_card(&self, params: &SaveCardParams) -> Result<Option<()>, Self::Error>;
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, Self::Error>;
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, Self::Error>;
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, Self::Error>;

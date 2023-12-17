@@ -283,6 +283,39 @@ pub async fn get_one(
     Ok((Status::Ok, Json(res)))
 }
 
+#[rocket::patch("/<id>", data = "<card>")]
+pub async fn update(
+    id: UuidParam,
+    card: Json<CardRequest>,
+    card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> Result<Status, Status> {
+    let CardRequest {
+        owner_id,
+        publish_date,
+        publish_channels,
+        message,
+        images: _image,
+    } = card.0;
+    let params = SaveCardParams {
+        id: id.0,
+        owner_id,
+        publish_date,
+        message,
+        channels: publish_channels,
+    };
+    card_repo
+        .0
+        .update_card(&params)
+        .await
+        .map_err(|e| {
+            eprintln!("error in update card: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    Ok(Status::NoContent)
+}
+
 #[rocket::delete("/<id>")]
 pub async fn delete_one(
     id: UuidParam,
