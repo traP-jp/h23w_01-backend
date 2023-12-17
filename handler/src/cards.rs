@@ -8,7 +8,7 @@ use rocket::{Request, Route, State};
 use serde::{Deserialize, Serialize};
 use uuid::{uuid, Uuid};
 
-use domain::repository::DateTimeUtc;
+use domain::repository::{CardModel, DateTimeUtc};
 
 use crate::auth::AuthUser;
 use crate::{UuidParam, CR};
@@ -108,12 +108,40 @@ impl<'a> FromData<'a> for Png {
 
 #[rocket::get("/")]
 pub async fn get_all(
-    _card_repo: &State<CR>,
+    card_repo: &State<CR>,
     _user: AuthUser<'_>,
-) -> (Status, Json<Vec<CardResponse>>) {
-    // TODO: まだモックなので実装
-    let v = vec![mock_card_response().await];
-    (Status::Ok, Json(v))
+) -> Result<(Status, Json<Vec<CardResponse>>), Status> {
+    let card_models = card_repo.0.get_all_cards().await.map_err(|e| {
+        eprintln!("Error in get all cards: {}", e);
+        Status::InternalServerError
+    })?;
+    let mut response = vec![];
+    for CardModel {
+        id,
+        owner_id,
+        publish_date,
+        message,
+    } in card_models.into_iter()
+    {
+        // WARN: N+1
+        let publish_channels = card_repo
+            .0
+            .get_publish_channels_by_id(id)
+            .await
+            .map_err(|e| {
+                eprintln!("Error in get publish channels: {}", e);
+                Status::InternalServerError
+            })?;
+        let res = CardResponse {
+            id,
+            owner_id,
+            publish_date,
+            publish_channels,
+            message,
+        };
+        response.push(res);
+    }
+    Ok((Status::Ok, Json(response)))
 }
 
 #[rocket::post("/", data = "<card>")]

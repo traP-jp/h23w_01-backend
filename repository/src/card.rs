@@ -81,7 +81,7 @@ impl CardRepository for CardRepositoryImpl {
         let card = CardActiveModel {
             id: ActiveValue::Set(params.id),
             owner_id: ActiveValue::Set(params.owner_id),
-            publish_date: ActiveValue::Set(params.publish_date.naive_utc()),
+            publish_date: ActiveValue::Set(params.publish_date),
             message: ActiveValue::Set(params.message.clone()),
         };
         let channels = params
@@ -128,6 +128,20 @@ impl CardRepository for CardRepositoryImpl {
             .await?
             .map(CardModel::from);
         Ok(card)
+    }
+    async fn get_publish_channels_by_id(
+        &self,
+        card_id: Uuid,
+    ) -> Result<Vec<Uuid>, RepositoryError> {
+        let db = &self.0;
+        let pub_chans = PublishChannel::find()
+            .filter(PublishChannelColumn::CardId.contains(card_id))
+            .all(db)
+            .await?
+            .into_iter()
+            .map(|c| c.id)
+            .collect();
+        Ok(pub_chans)
     }
     async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, RepositoryError> {
         let db = &self.0;
