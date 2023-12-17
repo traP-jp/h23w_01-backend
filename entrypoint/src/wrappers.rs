@@ -2,9 +2,7 @@ use async_trait::async_trait;
 use uuid::Uuid;
 
 use domain::bot_client::{BotClient, ChannelList, ImageData, Stamp, StampType, User, UserDetail};
-use domain::repository::{
-    CardModel, CardRepository, MigrationStrategy, SaveCardParams, SaveImageParams,
-};
+use domain::repository::{CardModel, CardRepository, MigrationStrategy, SaveCardParams};
 
 pub struct BotClientWrapper<T: BotClient>(pub T);
 
@@ -50,15 +48,6 @@ where
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), Self::Error> {
         Ok(self.0.save_card(params).await?)
     }
-    async fn save_image(&self, params: &SaveImageParams) -> Result<(), Self::Error> {
-        Ok(self.0.save_image(params).await?)
-    }
-    async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), Self::Error> {
-        Ok(self.0.save_png(card_id, content).await?)
-    }
-    async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), Self::Error> {
-        Ok(self.0.save_svg(card_id, content).await?)
-    }
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, Self::Error> {
         Ok(self.0.get_all_cards().await?)
     }
@@ -68,7 +57,7 @@ where
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, Self::Error> {
         Ok(self.0.get_card_by_id(card_id).await?)
     }
-    async fn delete_card(&self, card_id: Uuid) -> Result<(), Self::Error> {
+    async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, Self::Error> {
         Ok(self.0.delete_card(card_id).await?)
     }
 }

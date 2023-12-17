@@ -1,6 +1,5 @@
 use crate::error::RepositoryError;
 use entity::prelude::*;
-use migration::Migrator;
 use sea_orm::{
     ActiveValue, ColumnTrait, ConnectOptions, Database, DatabaseConnection, DbErr, EntityTrait,
     QueryFilter, TransactionTrait,
@@ -9,9 +8,7 @@ use sea_orm_migration::MigratorTrait;
 use std::env::{var, VarError};
 use uuid::Uuid;
 
-use domain::repository::{
-    CardModel, CardRepository, MigrationStrategy, SaveCardParams, SaveImageParams,
-};
+use domain::repository::{CardModel, CardRepository, MigrationStrategy, SaveCardParams};
 
 use migration::Migrator;
 
@@ -65,15 +62,16 @@ impl CardRepositoryImpl {
 
 #[async_trait::async_trait]
 impl CardRepository for CardRepositoryImpl {
-    type Error = DbErr;
+    type Error = RepositoryError;
 
-    async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), DbErr> {
+    async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), RepositoryError> {
         match strategy {
-            MigrationStrategy::Up => Migrator::up(&self.0, None).await,
-            MigrationStrategy::Down => Migrator::down(&self.0, None).await,
-            MigrationStrategy::Refresh => Migrator::refresh(&self.0).await,
-            MigrationStrategy::None => Ok(()),
-        }
+            MigrationStrategy::Up => Migrator::up(&self.0, None).await?,
+            MigrationStrategy::Down => Migrator::down(&self.0, None).await?,
+            MigrationStrategy::Refresh => Migrator::refresh(&self.0).await?,
+            MigrationStrategy::None => (),
+        };
+        Ok(())
     }
 
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), RepositoryError> {

@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
             .expect("env var config for object storage not found");
         ImageRepositoryImpl::new_with_config(config).expect("failed to connect object storage")
     };
-    let migration_strategy = env::var("MIGRATION")
+    let migration_strategy = var("MIGRATION")
         .ok()
         .and_then(|m| m.parse::<MigrationStrategy>().ok())
         .unwrap_or_default();
