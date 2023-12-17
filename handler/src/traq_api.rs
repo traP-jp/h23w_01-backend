@@ -6,7 +6,7 @@ use rocket::serde::json::Json;
 use rocket::{Request, Route, State};
 
 use domain::bot_client::StampType as RawStampType;
-use domain::bot_client::{BotClient, ImageData};
+use domain::bot_client::{BotClient, ChannelList, ImageData, Stamp, User, UserDetail};
 
 use crate::auth::AuthUser;
 
@@ -56,7 +56,7 @@ pub mod stamps {
     use super::*;
 
     use rocket::form::{self, FromFormField, ValueField};
-    use traq::models::Stamp;
+    use Stamp;
 
     type Stamps = Vec<Stamp>;
 
@@ -125,8 +125,6 @@ pub mod users {
 
     use super::*;
 
-    use traq::models::{User, UserDetail};
-
     type Users = Vec<User>;
 
     #[rocket::get("/")]
@@ -175,24 +173,15 @@ pub mod users {
 pub mod channels {
     use super::*;
 
-    use traq::models::Channel;
-
-    type Channels = Vec<Channel>;
-
     #[rocket::get("/")]
     pub async fn get_all(
         client: &State<BC>,
         _user: AuthUser<'_>,
-    ) -> Result<Json<Channels>, Status> {
-        client
-            .0
-            .get_channels()
-            .await
-            .map(|cl| Json(cl.public))
-            .map_err(|e| {
-                eprintln!("Error in get_channels: {}", e);
-                Status::InternalServerError
-            })
+    ) -> Result<Json<ChannelList>, Status> {
+        client.0.get_channels().await.map(Json).map_err(|e| {
+            eprintln!("Error in get_channels: {}", e);
+            Status::InternalServerError
+        })
     }
 
     pub fn routes() -> Routes {
