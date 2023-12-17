@@ -1,12 +1,9 @@
 use chrono::Utc;
-use repository::{
-    card::CardRepositoryImpl,
-    image::{ImageRepository, ImageRepositoryImpl},
-};
+use repository::{card::CardRepositoryImpl, image::ImageRepositoryImpl};
 use s3::{creds::Credentials, Bucket, Region};
 use sea_orm::{prelude::Uuid, Database};
 
-use domain::repository::{CardRepository, SaveCardParams};
+use domain::repository::{CardRepository, ImageRepository, SaveCardParams};
 
 const DATABASE_URL: &str = "mysql://root:pass@localhost:3306";
 const DB_NAME: &str = "/db";

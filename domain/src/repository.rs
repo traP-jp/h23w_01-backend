@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use bytes::Bytes;
 use chrono::NaiveDateTime;
 use mockall::automock;
 use serde::{Deserialize, Serialize};
@@ -65,4 +66,23 @@ pub struct SaveImageParams {
     pub id: Uuid,
     pub mime_type: String,
     pub content: Vec<u8>,
+}
+
+#[async_trait]
+pub trait ImageRepository {
+    type Error;
+    async fn save_png(&self, card_id: Uuid, content: &Bytes) -> Result<(), Self::Error>;
+    async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), Self::Error>;
+    async fn save_asset(
+        &self,
+        id: Uuid,
+        mime_type: &str,
+        content: &Bytes,
+    ) -> Result<(), Self::Error>;
+    async fn get_png(&self, card_id: Uuid) -> Result<Option<Bytes>, Self::Error>;
+    async fn get_svg(&self, card_id: Uuid) -> Result<Option<String>, Self::Error>;
+    async fn get_asset(&self, id: Uuid) -> Result<Option<(String, Bytes)>, Self::Error>;
+    async fn delete_png(&self, card_id: Uuid) -> Result<(), Self::Error>;
+    async fn delete_svg(&self, card_id: Uuid) -> Result<(), Self::Error>;
+    async fn delete_asset(&self, id: Uuid) -> Result<(), Self::Error>;
 }

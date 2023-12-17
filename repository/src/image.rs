@@ -3,25 +3,7 @@ use bytes::Bytes;
 use s3::{creds::Credentials, error::S3Error, Bucket, Region};
 use uuid::Uuid;
 
-#[async_trait::async_trait]
-pub trait ImageRepository {
-    async fn save_png(&self, card_id: Uuid, content: &Bytes) -> Result<(), RepositoryError>;
-    async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), RepositoryError>;
-    async fn save_asset(
-        &self,
-        id: Uuid,
-        mime_type: &str,
-        content: &Bytes,
-    ) -> Result<(), RepositoryError>;
-    async fn get_png(&self, card_id: Uuid) -> Result<Option<Bytes>, RepositoryError>;
-    async fn get_svg(&self, card_id: Uuid) -> Result<Option<String>, RepositoryError>;
-    async fn get_asset(&self, id: Uuid) -> Result<Option<(String, Bytes)>, RepositoryError>;
-    // async fn update_png(&self, card_id: Uuid, content: Bytes) -> Result<(), RepositoryError>;
-    // async fn update_svg(&self, card_id: Uuid, content: &str) -> Result<(), RepositoryError>;
-    async fn delete_png(&self, card_id: Uuid) -> Result<(), RepositoryError>;
-    async fn delete_svg(&self, card_id: Uuid) -> Result<(), RepositoryError>;
-    async fn delete_asset(&self, id: Uuid) -> Result<(), RepositoryError>;
-}
+use domain::repository::ImageRepository;
 
 pub struct ImageRepositoryConfig {
     pub bucket_name: String,
@@ -75,6 +57,8 @@ impl ImageRepositoryImpl {
 
 #[async_trait::async_trait]
 impl ImageRepository for ImageRepositoryImpl {
+    type Error = RepositoryError;
+
     async fn save_png(&self, card_id: Uuid, content: &Bytes) -> Result<(), RepositoryError> {
         let bucket = &self.0;
         let key = format!("{}.png", card_id);
