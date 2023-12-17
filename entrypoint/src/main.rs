@@ -23,7 +23,7 @@ static CORS_CONFIG: Lazy<CorsConfig> =
 async fn main() -> Result<()> {
     use std::env::var;
 
-    use handler::{BC, CR};
+    use handler::{BC, CR, IR};
 
     let verification_token =
         var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
@@ -54,6 +54,7 @@ async fn main() -> Result<()> {
     };
     let card_repository = CardRepositoryWrapper(card_repository);
     let card_repository = Arc::new(card_repository);
+    let image_repository = wrappers::ImageRepositoryWrapper(image_repository);
     let image_repository = Arc::new(image_repository);
     let cron = CronImpl::new(
         card_repository.clone(),
@@ -85,7 +86,7 @@ async fn main() -> Result<()> {
         .manage(client)
         .manage(handler::auth::AuthUserConfig(check_auth))
         .manage(card_repository)
-        .manage(image_repository)
+        .manage(IR(image_repository))
         .attach(AdHoc::on_response("CORS wrapper", |req, res| {
             Box::pin(async move {
                 use rocket::http::hyper::header::ORIGIN;
