@@ -13,6 +13,7 @@ traq-bot-http.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 uuid.workspace = true
+bytes.workspace = true
 
 bot-client.path = "../bot-client"
 handler.path = "../handler"

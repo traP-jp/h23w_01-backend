@@ -1,8 +1,11 @@
 use async_trait::async_trait;
+use bytes::Bytes;
 use uuid::Uuid;
 
 use domain::bot_client::{BotClient, ChannelList, ImageData, Stamp, StampType, User, UserDetail};
-use domain::repository::{CardModel, CardRepository, MigrationStrategy, SaveCardParams};
+use domain::repository::{
+    CardModel, CardRepository, ImageRepository, MigrationStrategy, SaveCardParams,
+};
 
 pub struct BotClientWrapper<T: BotClient>(pub T);
 
@@ -59,5 +62,48 @@ where
     }
     async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, Self::Error> {
         Ok(self.0.delete_card(card_id).await?)
+    }
+}
+
+pub struct ImageRepositoryWrapper<T: ImageRepository>(pub T);
+
+#[async_trait]
+impl<E, T: ImageRepository<Error = E>> ImageRepository for ImageRepositoryWrapper<T>
+where
+    anyhow::Error: From<E>,
+{
+    type Error = anyhow::Error;
+
+    async fn save_png(&self, card_id: Uuid, content: &Bytes) -> Result<(), Self::Error> {
+        Ok(self.0.save_png(card_id, content).await?)
+    }
+    async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), Self::Error> {
+        Ok(self.0.save_svg(card_id, content).await?)
+    }
+    async fn save_asset(
+        &self,
+        id: Uuid,
+        mime_type: &str,
+        content: &Bytes,
+    ) -> Result<(), Self::Error> {
+        Ok(self.0.save_asset(id, mime_type, content).await?)
+    }
+    async fn get_png(&self, card_id: Uuid) -> Result<Option<Bytes>, Self::Error> {
+        Ok(self.0.get_png(card_id).await?)
+    }
+    async fn get_svg(&self, card_id: Uuid) -> Result<Option<String>, Self::Error> {
+        Ok(self.0.get_svg(card_id).await?)
+    }
+    async fn get_asset(&self, id: Uuid) -> Result<Option<(String, Bytes)>, Self::Error> {
+        Ok(self.0.get_asset(id).await?)
+    }
+    async fn delete_png(&self, card_id: Uuid) -> Result<(), Self::Error> {
+        Ok(self.0.delete_png(card_id).await?)
+    }
+    async fn delete_svg(&self, card_id: Uuid) -> Result<(), Self::Error> {
+        Ok(self.0.delete_svg(card_id).await?)
+    }
+    async fn delete_asset(&self, id: Uuid) -> Result<(), Self::Error> {
+        Ok(self.0.delete_asset(id).await?)
     }
 }

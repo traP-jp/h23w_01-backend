@@ -19,7 +19,7 @@ static CORS_CONFIG: Lazy<CorsConfig> =
 async fn main() -> Result<()> {
     use std::env::var;
 
-    use handler::{cards::CR, traq_api::BC};
+    use handler::{BC, CR};
 
     let verification_token =
         var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;

@@ -1,27 +1,15 @@
-use std::sync::Arc;
-
 use rocket::http::Status;
 use rocket::response::{Responder, Response};
 use rocket::serde::json::Json;
 use rocket::{Request, Route, State};
 
 use domain::bot_client::StampType as RawStampType;
-use domain::bot_client::{BotClient, ChannelList, ImageData, Stamp, User, UserDetail};
+use domain::bot_client::{ChannelList, ImageData, Stamp, User, UserDetail};
 
 use crate::auth::AuthUser;
+use crate::BC;
 
 type Routes = Vec<Route>;
-
-pub struct BC(pub Arc<dyn BotClient<Error = anyhow::Error>>);
-
-impl<T> From<T> for BC
-where
-    T: BotClient<Error = anyhow::Error>,
-{
-    fn from(value: T) -> Self {
-        BC(Arc::new(value))
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct ResponseImage(pub ImageData);

@@ -947,6 +947,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bot-client",
+ "bytes",
  "domain",
  "handler",
  "once_cell",

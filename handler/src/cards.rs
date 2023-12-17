@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use bytes::Bytes;
 use rocket::data::{Data, FromData, Outcome, ToByteUnit};
@@ -9,20 +7,8 @@ use rocket::serde::json::Json;
 use rocket::{Request, Route, State};
 use serde::{Deserialize, Serialize};
 
-use domain::repository::CardRepository;
-
 use crate::auth::AuthUser;
-
-pub struct CR(pub Arc<dyn CardRepository<Error = anyhow::Error>>);
-
-impl<T> From<T> for CR
-where
-    T: CardRepository<Error = anyhow::Error>,
-{
-    fn from(value: T) -> Self {
-        CR(Arc::new(value))
-    }
-}
+use crate::CR;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]

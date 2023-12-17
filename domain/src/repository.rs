@@ -68,8 +68,9 @@ pub struct SaveImageParams {
     pub content: Vec<u8>,
 }
 
+#[automock(type Error = String;)]
 #[async_trait]
-pub trait ImageRepository {
+pub trait ImageRepository: Interface {
     type Error;
     async fn save_png(&self, card_id: Uuid, content: &Bytes) -> Result<(), Self::Error>;
     async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), Self::Error>;
