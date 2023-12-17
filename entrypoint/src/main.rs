@@ -6,9 +6,8 @@ use rocket::{fairing::AdHoc, http::Method, routes};
 use traq_bot_http::RequestParser;
 
 use bot_client::BotClientImpl;
-use repository::card::{
-    CardRepository, CardRepositoryConfig, CardRepositoryImpl, MigrationStrategy,
-};
+use domain::repository::{CardRepository, MigrationStrategy};
+use repository::card::{CardRepositoryConfig, CardRepositoryImpl};
 
 use handler::cors::{options, CorsConfig};
 
@@ -24,6 +23,7 @@ static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    use handler::{cards::CR, traq_api::BC};
     let verification_token =
         env::var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
     let access_token = env::var("BOT_ACCESS_TOKEN").context("env var BOT_ACCESS_TOKEN is unset")?;
@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
         .unwrap_or(true);
     let parser = RequestParser::new(&verification_token);
     let client = BotClientImpl::new(access_token);
-    let client: handler::traq_api::BC = wrappers::BotClientWrapper(client).into();
+    let client: BC = wrappers::BotClientWrapper(client).into();
     let card_repository = {
         let load = |s: &str| CardRepositoryConfig::load_env_with_prefix(s);
         let config = load("")
@@ -52,6 +52,7 @@ async fn main() -> Result<()> {
         .migrate(migration_strategy)
         .await
         .context("failed white migration")?;
+    let card_repository: CR = wrappers::CardRepositoryWrapper(card_repository).into();
     rocket::build()
         .mount("/api", routes![handler::ping])
         .mount("/api/cards", handler::cards::routes())

@@ -880,6 +880,7 @@ dependencies = [
  "rocket",
  "tokio",
  "traq-bot-http",
+ "uuid",
 ]
 
 [[package]]
