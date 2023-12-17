@@ -1,12 +1,16 @@
+use std::io::Cursor;
+
 use async_trait::async_trait;
 use bytes::Bytes;
 use rocket::data::ToByteUnit;
 use rocket::form::{self, error::ErrorKind, DataField, Form, FromFormField};
+use rocket::http::hyper::header::CONTENT_TYPE;
 use rocket::http::Status;
-use rocket::{routes, FromForm, Route};
+use rocket::response::Responder;
+use rocket::{routes, FromForm, Response, Route, State};
 
 use crate::auth::AuthUser;
-use crate::UuidParam;
+use crate::{UuidParam, IR};
 
 #[derive(Debug, Clone)]
 pub enum FormImage {
@@ -45,20 +49,80 @@ pub struct ImageForm<'r> {
     pub image: FormImage,
 }
 
+pub struct ImageResponse(pub String, pub Bytes);
+
+impl<'r, 'o: 'r> Responder<'r, 'o> for ImageResponse {
+    fn respond_to(self, _request: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
+        let res = Response::build()
+            .status(Status::Ok)
+            .raw_header(CONTENT_TYPE.as_str(), self.0)
+            .sized_body(self.1.len(), Cursor::new(self.1))
+            .finalize();
+        Ok(res)
+    }
+}
+
 #[rocket::get("/<id>")]
-pub async fn get_one(id: UuidParam, _user: AuthUser<'_>) -> Status {
-    let id = id.0;
-    println!("get image id {}", id);
-    Status::NotImplemented
+pub async fn get_one(
+    id: UuidParam,
+    image_repo: &State<IR>,
+    _user: AuthUser<'_>,
+) -> Result<ImageResponse, Status> {
+    let image = image_repo
+        .0
+        .get_asset(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get asset: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    Ok(ImageResponse(image.0, image.1))
 }
 
 #[rocket::post("/", data = "<form_data>")]
-pub async fn post(form_data: Form<ImageForm<'_>>, _user: AuthUser<'_>) -> Status {
-    println!(
-        "post image data id={}, image={:?}",
-        form_data.id, form_data.image
-    );
-    Status::NotImplemented
+pub async fn post(
+    form_data: Form<ImageForm<'_>>,
+    image_repo: &State<IR>,
+    _user: AuthUser<'_>,
+) -> Result<Status, Status> {
+    let ImageForm { id, image } = form_data.into_inner();
+    let id = id.parse().map_err(|_| Status::BadRequest)?;
+    match image {
+        FormImage::Svg(svg) => image_repo
+            .0
+            .save_asset(id, "image/svg+xml", &Bytes::from(svg))
+            .await
+            .map_err(|e| {
+                eprintln!("error in create asset svg: {}", e);
+                Status::InternalServerError
+            })?,
+        FormImage::Png(png) => image_repo
+            .0
+            .save_asset(id, "image/png", &png)
+            .await
+            .map_err(|e| {
+                eprintln!("error in create asset png: {}", e);
+                Status::InternalServerError
+            })?,
+        FormImage::Jpeg(jpeg) => image_repo
+            .0
+            .save_asset(id, "image/jpeg", &jpeg)
+            .await
+            .map_err(|e| {
+                eprintln!("error in create asset jpeg: {}", e);
+                Status::InternalServerError
+            })?,
+        FormImage::Gif(gif) => image_repo
+            .0
+            .save_asset(id, "image/gif", &gif)
+            .await
+            .map_err(|e| {
+                eprintln!("error in create asset gif: {}", e);
+                Status::InternalServerError
+            })?,
+    }
+    Ok(Status::NoContent)
 }
 
 pub fn routes() -> Vec<Route> {
