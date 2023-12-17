@@ -202,6 +202,7 @@ pub async fn post(
 ) -> Result<(Status, String), Status> {
     // TODO: imagesのIDをDBにcard_idとのrelationで入れたい
     // GCのため
+    // TODO: requestのowner_idとuser.idの一致確認
     let CardRequest {
         owner_id,
         publish_date,
@@ -248,6 +249,7 @@ pub async fn get_one(
     card_repo: &State<CR>,
     _user: AuthUser,
 ) -> Result<(Status, Json<CardResponse>), Status> {
+    // TODO: NotFoundを返すべき場合がありそう
     let card_model = card_repo
         .0
         .get_card_by_id(id.0)
@@ -273,6 +275,7 @@ pub async fn update(
     card_repo: &State<CR>,
     _user: AuthUser,
 ) -> Result<Status, Status> {
+    // TODO: requestのowner_idとuser.idの一致確認
     let CardRequest {
         owner_id,
         publish_date,
@@ -370,6 +373,7 @@ pub async fn get_svg(
     image_repo: &State<IR>,
     _user: AuthUser,
 ) -> Result<Svg, Status> {
+    // TODO: 404を返すべき場合がある
     let res = image_repo
         .0
         .get_svg(id.0)
@@ -390,6 +394,7 @@ pub async fn post_svg(
     _card_repo: &State<CR>,
     _user: AuthUser,
 ) -> Result<Status, Status> {
+    // TODO: 404
     image_repo.0.save_svg(id.0, &svg.0).await.map_err(|e| {
         eprintln!("error in create svg: {}", e);
         Status::InternalServerError
@@ -405,6 +410,7 @@ pub async fn patch_svg(
     _card_repo: &State<CR>,
     _user: AuthUser,
 ) -> Result<Status, Status> {
+    // TODO: requestのowner_idとuser.idの一致確認
     image_repo.0.save_svg(id.0, &svg.0).await.map_err(|e| {
         eprintln!("error in update svg: {}", e);
         Status::InternalServerError
@@ -418,6 +424,7 @@ pub async fn get_png(
     image_repo: &State<IR>,
     _user: AuthUser,
 ) -> Result<Png, Status> {
+    // TODO: requestのowner_idとuser.idの一致確認
     let png = image_repo
         .0
         .get_png(id.0)
@@ -437,6 +444,7 @@ pub async fn post_png(
     image_repo: &State<IR>,
     _user: AuthUser,
 ) -> Result<Status, Status> {
+    // TODO: owner_idとuser.idの一致確認
     image_repo.0.save_png(id.0, &png.0).await.map_err(|e| {
         eprintln!("error in create png: {}", e);
         Status::InternalServerError
@@ -451,6 +459,7 @@ pub async fn patch_png(
     image_repo: &State<IR>,
     _user: AuthUser,
 ) -> Result<Status, Status> {
+    // TODO: owner_idとuser.idの一致確認
     image_repo.0.save_png(id.0, &png.0).await.map_err(|e| {
         eprintln!("error in update png: {}", e);
         Status::InternalServerError
