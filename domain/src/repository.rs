@@ -12,13 +12,10 @@ pub trait CardRepository: Interface {
 
     async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), Self::Error>;
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), Self::Error>;
-    async fn save_image(&self, params: &SaveImageParams) -> Result<(), Self::Error>;
-    async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), Self::Error>;
-    async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), Self::Error>;
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, Self::Error>;
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, Self::Error>;
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, Self::Error>;
-    async fn delete_card(&self, card_id: Uuid) -> Result<(), Self::Error>;
+    async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, Self::Error>;
 }
 
 pub type DateTimeUtc = chrono::DateTime<chrono::Utc>;

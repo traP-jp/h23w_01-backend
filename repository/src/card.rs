@@ -1,11 +1,12 @@
-use std::env::{var, VarError};
-
+use crate::error::RepositoryError;
 use entity::prelude::*;
+use migration::Migrator;
 use sea_orm::{
     ActiveValue, ColumnTrait, ConnectOptions, Database, DatabaseConnection, DbErr, EntityTrait,
     QueryFilter, TransactionTrait,
 };
 use sea_orm_migration::MigratorTrait;
+use std::env::{var, VarError};
 use uuid::Uuid;
 
 use domain::repository::{
@@ -49,12 +50,14 @@ impl CardRepositoryImpl {
         Self(db.clone())
     }
 
-    pub async fn connect(opt: impl Into<ConnectOptions>) -> Result<Self, DbErr> {
+    pub async fn connect(opt: impl Into<ConnectOptions>) -> Result<Self, RepositoryError> {
         let db = Database::connect(opt).await?;
         Ok(Self(db))
     }
 
-    pub async fn connect_with_config(config: CardRepositoryConfig) -> Result<Self, DbErr> {
+    pub async fn connect_with_config(
+        config: CardRepositoryConfig,
+    ) -> Result<Self, RepositoryError> {
         let url = config.database_url();
         Self::connect(url).await
     }
@@ -73,7 +76,7 @@ impl CardRepository for CardRepositoryImpl {
         }
     }
 
-    async fn save_card(&self, params: &SaveCardParams) -> Result<(), DbErr> {
+    async fn save_card(&self, params: &SaveCardParams) -> Result<(), RepositoryError> {
         // TODO: 画像の保存
         let db = &self.0;
         let tx = db.begin().await?;
@@ -97,19 +100,8 @@ impl CardRepository for CardRepositoryImpl {
         tx.commit().await?;
         Ok(())
     }
-    async fn save_image(&self, params: &SaveImageParams) -> Result<(), DbErr> {
-        let db = &self.0;
-        let tx = db.begin().await?;
-        let image = ImageActiveModel {
-            id: ActiveValue::Set(params.id),
-            mime_type: ActiveValue::Set(params.mime_type.clone()),
-            content: ActiveValue::Set(params.content.clone()),
-        };
-        Image::insert(image).exec(&tx).await?;
-        tx.commit().await?;
-        Ok(())
-    }
-    async fn get_all_cards(&self) -> Result<Vec<CardModel>, DbErr> {
+
+    async fn get_all_cards(&self) -> Result<Vec<CardModel>, RepositoryError> {
         let db = &self.0;
         let cards = Card::find()
             .all(db)
@@ -120,7 +112,7 @@ impl CardRepository for CardRepositoryImpl {
         Ok(cards)
     }
 
-    async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, DbErr> {
+    async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, RepositoryError> {
         let db = &self.0;
         let cards = Card::find()
             .filter(CardColumn::Id.contains(user_id))
@@ -131,7 +123,7 @@ impl CardRepository for CardRepositoryImpl {
             .collect();
         Ok(cards)
     }
-    async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, DbErr> {
+    async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, RepositoryError> {
         let db = &self.0;
         let card = Card::find_by_id(card_id)
             .one(db)
@@ -139,31 +131,13 @@ impl CardRepository for CardRepositoryImpl {
             .map(CardModel::from);
         Ok(card)
     }
-    async fn delete_card(&self, card_id: Uuid) -> Result<(), DbErr> {
+    async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, RepositoryError> {
         let db = &self.0;
-        Card::delete_by_id(card_id).exec(db).await?;
-        Ok(())
-    }
-    async fn save_png(&self, card_id: Uuid, content: &[u8]) -> Result<(), DbErr> {
-        let db = &self.0;
-        let tx = db.begin().await?;
-        let card_png = CardPngActiveModel {
-            card_id: ActiveValue::Set(card_id),
-            content: ActiveValue::Set(content.to_vec()),
-        };
-        CardPng::insert(card_png).exec(&tx).await?;
-        tx.commit().await?;
-        Ok(())
-    }
-    async fn save_svg(&self, card_id: Uuid, content: &str) -> Result<(), DbErr> {
-        let db = &self.0;
-        let tx = db.begin().await?;
-        let card_svg = CardSvgActiveModel {
-            card_id: ActiveValue::Set(card_id),
-            content: ActiveValue::Set(content.to_string()),
-        };
-        CardSvg::insert(card_svg).exec(&tx).await?;
-        tx.commit().await?;
-        Ok(())
+        let result = Card::delete_by_id(card_id).exec(db).await;
+        match result {
+            Ok(_) => Ok(Some(())),
+            Err(DbErr::RecordNotFound(_)) => Ok(None),
+            Err(e) => Err(RepositoryError::DbErr(e)),
+        }
     }
 }

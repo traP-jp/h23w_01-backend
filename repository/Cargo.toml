@@ -11,6 +11,9 @@ async-trait.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 sea-orm-migration = "0.12.9"
+rust-s3.workspace = true
+thiserror.workspace = true
+bytes.workspace = true
 
 entity.path = "../entity"
 migration.path = "../migration"

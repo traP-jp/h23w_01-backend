@@ -6,6 +6,7 @@ use traq_bot_http::RequestParser;
 use bot_client::BotClientImpl;
 use domain::repository::{CardRepository, MigrationStrategy};
 use repository::card::{CardRepositoryConfig, CardRepositoryImpl};
+use repository::image::{ImageRepositoryConfig, ImageRepositoryImpl};
 
 use handler::cors::{options, CorsConfig};
 
@@ -40,7 +41,15 @@ async fn main() -> Result<()> {
             .await
             .context("failed to connect database")?
     };
-    let migration_strategy = var("MIGRATION")
+    let image_repository = {
+        let load = |s: &str| ImageRepositoryConfig::load_env_with_prefix(s);
+        let config = load("")
+            .or_else(|_| load("MINIO_"))
+            .or_else(|_| load("R2_"))
+            .expect("env var config for object storage not found");
+        ImageRepositoryImpl::new_with_config(config).expect("failed to connect object storage")
+    };
+    let migration_strategy = env::var("MIGRATION")
         .ok()
         .and_then(|m| m.parse::<MigrationStrategy>().ok())
         .unwrap_or_default();
@@ -62,6 +71,7 @@ async fn main() -> Result<()> {
         .manage(client)
         .manage(handler::auth::AuthUserConfig(check_auth))
         .manage(card_repository)
+        .manage(image_repository)
         .attach(AdHoc::on_response("CORS wrapper", |req, res| {
             Box::pin(async move {
                 use rocket::http::hyper::header::ORIGIN;
