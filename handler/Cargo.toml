@@ -14,7 +14,7 @@ traq.workspace = true
 itertools.workspace = true
 bytes.workspace = true
 shaku.workspace = true
+anyhow.workspace = true
 
 repository.path = "../repository"
 domain.path = "../domain"
-anyhow = "1.0.75"
