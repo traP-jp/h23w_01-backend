@@ -30,7 +30,7 @@ pub struct ImageRepositoryConfig {
     pub account_id: String,
     pub access_key: String,
     pub secret_key: String,
-    // pub path_style: bool,
+    pub path_style: bool,
 }
 
 impl ImageRepositoryConfig {
@@ -42,7 +42,7 @@ impl ImageRepositoryConfig {
             account_id: var_suff("ACCOUNT_ID")?,
             access_key: var_suff("ACCESS_KEY")?,
             secret_key: var_suff("SECRET_KEY")?,
-            // path_style: var_suff("PATH_STYLE")?.parse().expect("invalid bool"),
+            path_style: var_suff("PATH_STYLE")?.parse().expect("invalid bool"),
         })
     }
     pub fn backet(&self) -> Result<Bucket, RepositoryError> {
@@ -61,11 +61,7 @@ impl ImageRepositoryConfig {
             )
             .map_err(|e| RepositoryError::S3Err(e.into()))?,
         )?;
-        if self.path_style {
-            Ok(bucket.with_path_style())
-        } else {
-            Ok(bucket)
-        }
+        Ok(bucket)
     }
 }
 
