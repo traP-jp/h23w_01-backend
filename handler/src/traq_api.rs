@@ -12,7 +12,16 @@ use crate::auth::AuthUser;
 
 type Routes = Vec<Route>;
 
-type DynamicBotClient = Arc<dyn BotClient<Error = anyhow::Error>>;
+pub struct BC(pub Arc<dyn BotClient<Error = anyhow::Error>>);
+
+impl<T> From<T> for BC
+where
+    T: BotClient<Error = anyhow::Error>,
+{
+    fn from(value: T) -> Self {
+        BC(Arc::new(value))
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct ResponseImage(pub ImageData);
@@ -75,10 +84,11 @@ pub mod stamps {
     #[rocket::get("/?<type>")]
     pub async fn get_all(
         r#type: Option<StampType>,
-        client: &State<DynamicBotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<Json<Stamps>, Status> {
         client
+            .0
             .get_stamps(r#type.unwrap_or(RawStampType::None.into()).0)
             .await
             .map(Json)
@@ -91,10 +101,11 @@ pub mod stamps {
     #[rocket::get("/<id>/image")]
     pub async fn get_one(
         id: &str,
-        client: &State<DynamicBotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<ResponseImage, Status> {
         client
+            .0
             .get_stamp_image(id)
             .await
             .map(ResponseImage)
@@ -119,11 +130,8 @@ pub mod users {
     type Users = Vec<User>;
 
     #[rocket::get("/")]
-    pub async fn get_all(
-        client: &State<DynamicBotClient>,
-        _user: AuthUser<'_>,
-    ) -> Result<Json<Users>, Status> {
-        client.get_users().await.map(Json).map_err(|e| {
+    pub async fn get_all(client: &State<BC>, _user: AuthUser<'_>) -> Result<Json<Users>, Status> {
+        client.0.get_users().await.map(Json).map_err(|e| {
             eprintln!("Error in get_users: {}", e);
             Status::InternalServerError
         })
@@ -132,10 +140,10 @@ pub mod users {
     #[rocket::get("/<id>")]
     pub async fn get_detail(
         id: &str,
-        client: &State<DynamicBotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<Json<UserDetail>, Status> {
-        client.get_user(id).await.map(Json).map_err(|e| {
+        client.0.get_user(id).await.map(Json).map_err(|e| {
             eprintln!("Error in get_user: {}", e);
             Status::InternalServerError
         })
@@ -144,10 +152,11 @@ pub mod users {
     #[rocket::get("/<id>/icon")]
     pub async fn get_icon(
         id: &str,
-        client: &State<DynamicBotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<ResponseImage, Status> {
         client
+            .0
             .get_user_icon(id)
             .await
             .map(ResponseImage)
@@ -172,10 +181,11 @@ pub mod channels {
 
     #[rocket::get("/")]
     pub async fn get_all(
-        client: &State<DynamicBotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<Json<Channels>, Status> {
         client
+            .0
             .get_channels()
             .await
             .map(|cl| Json(cl.public))
