@@ -13,13 +13,8 @@ use handler::cors::{options, CorsConfig};
 
 mod wrappers;
 
-static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
-    let Ok(origins) = env::var("ALLOWED_ORIGINS") else {
-        eprintln!("env_var ALLOWED_ORIGIN is unset");
-        exit(1);
-    };
-    CorsConfig::new(origins.split(' '))
-});
+static CORS_CONFIG: Lazy<CorsConfig> =
+    Lazy::new(|| CorsConfig::load_env().expect("failed to load CORS config"));
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -78,6 +73,7 @@ async fn main() -> Result<()> {
                     return;
                 };
                 res.set_header(origin_header);
+                res.set_header(CORS_CONFIG.render_credentials());
                 if req.method() != Method::Options {
                     println!("CORS wrapper: method is not OPTION");
                     return;
