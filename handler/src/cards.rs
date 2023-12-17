@@ -194,7 +194,7 @@ pub async fn get_all(
             Status::InternalServerError
         })?
         .into_iter()
-        .filter(|c| c.id == user_id || c.publish_date < now)
+        .filter(|c| c.owner_id == user_id || c.publish_date < now)
         .collect();
     let response = complete_card_response(&card_models, card_repo)
         .await
