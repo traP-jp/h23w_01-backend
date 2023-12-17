@@ -29,6 +29,7 @@ pub struct ImageRepositoryConfig {
     pub region: String,
     pub access_key: String,
     pub secret_key: String,
+    pub path_style: bool,
 }
 
 impl ImageRepositoryConfig {
@@ -39,6 +40,7 @@ impl ImageRepositoryConfig {
             region: var_suff("REGION")?,
             access_key: var_suff("ACCESS_KEY")?,
             secret_key: var_suff("SECRET_KEY")?,
+            path_style: var_suff("PATH_STYLE")?.parse().expect("invalid bool"),
         })
     }
     pub fn backet(&self) -> Result<Bucket, RepositoryError> {
@@ -54,7 +56,11 @@ impl ImageRepositoryConfig {
             )
             .map_err(|e| RepositoryError::S3Err(e.into()))?,
         )?;
-        Ok(bucket)
+        if self.path_style {
+            Ok(bucket.with_path_style())
+        } else {
+            Ok(bucket)
+        }
     }
 }
 
@@ -83,7 +89,8 @@ impl ImageRepository for ImageRepositoryImpl {
         let bucket = &self.0;
         let key = format!("{}.svg", card_id);
         bucket
-            .put_object_with_content_type(&key, content.as_bytes(), "image/svg+xml")
+            // .put_object_with_content_type(&key, content.as_bytes(), "image/svg+xml")
+            .put_object(&key, content.as_bytes())
             .await?;
         Ok(())
     }
