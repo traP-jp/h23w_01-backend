@@ -2,7 +2,10 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use uuid::Uuid;
 
-use domain::bot_client::{BotClient, ChannelList, ImageData, Stamp, StampType, User, UserDetail};
+use domain::bot_client::{
+    BotClient, ChannelList, ImageData, PostMessageParams, Stamp, StampType, UploadFileParams,
+    UploadFileResp, User, UserDetail,
+};
 use domain::repository::{
     CardModel, CardRepository, ImageRepository, MigrationStrategy, SaveCardParams,
 };
@@ -33,6 +36,12 @@ where
     }
     async fn get_channels(&self) -> anyhow::Result<ChannelList> {
         Ok(self.0.get_channels().await?)
+    }
+    async fn post_message(&self, params: &PostMessageParams) -> Result<(), Self::Error> {
+        Ok(self.0.post_message(params).await?)
+    }
+    async fn uplodad_file(&self, params: &UploadFileParams) -> Result<UploadFileResp, Self::Error> {
+        Ok(self.0.uplodad_file(params).await?)
     }
 }
 

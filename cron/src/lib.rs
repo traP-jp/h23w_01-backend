@@ -50,9 +50,10 @@ async fn task<
     image_repository: Arc<IR>,
     bot_client: Arc<BC>,
 ) {
+    use indoc::formatdoc;
     let cards = card_repository.get_all_cards().await.unwrap();
     let _ = cards.iter().map(|card| async {
-        bot_client
+        let file_id = bot_client
             .uplodad_file(&UploadFileParams {
                 id: card.id,
                 channel_id: card.id,
@@ -60,10 +61,34 @@ async fn task<
                 mime_type: "image/png".to_string(),
             })
             .await
+            .unwrap()
+            .id;
+        let user = bot_client
+            .get_user(&card.owner_id.to_string())
+            .await
             .unwrap();
+        let message = match card.message.as_ref() {
+            Some(m) => formatdoc! {
+                r##"
+                    !{{"type":"user","raw":"@{}","id":"{}"}} からのQardです！
+                    {}
+
+                    https://q.trap.jp/files/{}
+                "##,
+                user.name, user.id, m, file_id
+            },
+            None => formatdoc! {
+                r##"
+                    !{{"type":"user","raw":"@{}","id":"{}"}} からのQardです！
+
+                    https://q.trap.jp/files/{}
+                "##,
+                user.name, user.id, file_id
+            },
+        };
         bot_client
             .post_message(&PostMessageParams {
-                content: format!("hgoe"),
+                content: message,
                 channel_id: card.id,
                 embed: false,
             })

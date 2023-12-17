@@ -8,3 +8,4 @@ publish = false
 tokio-cron-scheduler.workspace = true
 async-trait.workspace = true
 domain.path = "../domain"
+indoc = "2.0.4"
