@@ -115,9 +115,13 @@ pub mod users {
 
     type Users = Vec<User>;
 
-    #[rocket::get("/")]
-    pub async fn get_all(client: &State<BC>, _user: AuthUser<'_>) -> Result<Json<Users>, Status> {
-        client.0.get_users().await.map(Json).map_err(|e| {
+    #[rocket::get("/?<name>")]
+    pub async fn get_all(
+        name: Option<&str>,
+        client: &State<BC>,
+        _user: AuthUser<'_>,
+    ) -> Result<Json<Users>, Status> {
+        client.0.get_users(name).await.map(Json).map_err(|e| {
             eprintln!("Error in get_users: {}", e);
             Status::InternalServerError
         })

@@ -1,6 +1,9 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use rocket::get;
+use rocket::request::FromParam;
+use uuid::Uuid;
 
 use domain::bot_client::BotClient;
 use domain::repository::{CardRepository, ImageRepository};
@@ -15,6 +18,17 @@ pub mod traq_api;
 #[get("/ping")]
 pub fn ping() -> &'static str {
     "pong"
+}
+
+pub struct UuidParam(pub Uuid);
+
+impl<'r> FromParam<'r> for UuidParam {
+    type Error = <Uuid as FromStr>::Err;
+
+    fn from_param(param: &'r str) -> Result<Self, Self::Error> {
+        let id = param.parse()?;
+        Ok(Self(id))
+    }
 }
 
 pub struct CR(pub Arc<dyn CardRepository<Error = anyhow::Error>>);

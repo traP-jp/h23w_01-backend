@@ -26,8 +26,8 @@ where
     async fn get_stamp_image(&self, stamp_id: &str) -> anyhow::Result<ImageData> {
         Ok(self.0.get_stamp_image(stamp_id).await?)
     }
-    async fn get_users(&self) -> anyhow::Result<Vec<User>> {
-        Ok(self.0.get_users().await?)
+    async fn get_users<'a>(&'a self, name: Option<&'a str>) -> anyhow::Result<Vec<User>> {
+        Ok(self.0.get_users(name).await?)
     }
     async fn get_user(&self, user_id: &str) -> anyhow::Result<UserDetail> {
         Ok(self.0.get_user(user_id).await?)
@@ -69,6 +69,9 @@ where
     }
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, Self::Error> {
         Ok(self.0.get_card_by_id(card_id).await?)
+    }
+    async fn get_publish_channels_by_id(&self, card_id: Uuid) -> Result<Vec<Uuid>, Self::Error> {
+        Ok(self.0.get_publish_channels_by_id(card_id).await?)
     }
     async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, Self::Error> {
         Ok(self.0.delete_card(card_id).await?)
