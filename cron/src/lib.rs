@@ -1,7 +1,7 @@
 use std::{fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use domain::{
     bot_client::{BotClient, PostMessageParams, UploadFileParams},
     cron::Cron,
@@ -27,7 +27,7 @@ impl<
         let sched = JobScheduler::new().await.unwrap();
         sched
             .add(
-                Job::new_async("* * * *", move |_uuid, _l| {
+                Job::new_async("* * * * *", move |_uuid, _l| {
                     let card_repository = self.clone().card_repository.clone();
                     let image_repository = self.clone().image_repository.clone();
                     let bot_client = self.clone().bot_client.clone();
@@ -55,7 +55,7 @@ async fn task<
     use indoc::formatdoc;
     let now = Utc::now();
     let start = now;
-    let end = now;
+    let end = now + Duration::seconds(1);
     let cards_with_channels = card_repository
         .get_card_with_channels_by_date(start, end)
         .await
