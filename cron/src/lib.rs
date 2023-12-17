@@ -1,11 +1,13 @@
 use std::{fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
+use chrono::Utc;
 use domain::{
     bot_client::{BotClient, PostMessageParams, UploadFileParams},
     cron::Cron,
     repository::{CardRepository, ImageRepository},
 };
+use futures::future::join_all;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
 pub struct CronImpl<CR: CardRepository, IR: ImageRepository, BC: BotClient> {
@@ -16,9 +18,9 @@ pub struct CronImpl<CR: CardRepository, IR: ImageRepository, BC: BotClient> {
 
 #[async_trait]
 impl<
-        CR: CardRepository<Error = impl Debug>,
-        IR: ImageRepository<Error = impl Debug>,
-        BC: BotClient<Error = impl Debug>,
+        CR: CardRepository<Error = impl Debug + Send>,
+        IR: ImageRepository<Error = impl Debug + Send>,
+        BC: BotClient<Error = impl Debug + Send>,
     > Cron for CronImpl<CR, IR, BC>
 {
     async fn run(self: Arc<Self>) -> () {
@@ -51,47 +53,57 @@ async fn task<
     bot_client: Arc<BC>,
 ) {
     use indoc::formatdoc;
-    let cards = card_repository.get_all_cards().await.unwrap();
-    let _ = cards.iter().map(|card| async {
-        let file_id = bot_client
-            .uplodad_file(&UploadFileParams {
-                id: card.id,
-                channel_id: card.id,
-                content: image_repository.get_png(card.id).await.unwrap().unwrap(),
-                mime_type: "image/png".to_string(),
-            })
-            .await
-            .unwrap()
-            .id;
-        let user = bot_client
-            .get_user(&card.owner_id.to_string())
-            .await
-            .unwrap();
-        let message = match card.message.as_ref() {
-            Some(m) => formatdoc! {
-                r##"
+    let now = Utc::now();
+    let start = now;
+    let end = now;
+    let cards_with_channels = card_repository
+        .get_card_with_channels_by_date(start, end)
+        .await
+        .unwrap();
+    let sends = cards_with_channels.iter().map(|(card, channels)| async {
+        let sends = channels.iter().map(|channel| async {
+            let file_id = bot_client
+                .uplodad_file(&UploadFileParams {
+                    id: card.id,
+                    channel_id: channel.id,
+                    content: image_repository.get_png(card.id).await.unwrap().unwrap(),
+                    mime_type: "image/png".to_string(),
+                })
+                .await
+                .unwrap()
+                .id;
+            let user = bot_client
+                .get_user(&card.owner_id.to_string())
+                .await
+                .unwrap();
+            let message = match card.message.as_ref() {
+                Some(m) => formatdoc! {
+                    r##"
                     !{{"type":"user","raw":"@{}","id":"{}"}} からのQardです！
                     {}
 
                     https://q.trap.jp/files/{}
                 "##,
-                user.name, user.id, m, file_id
-            },
-            None => formatdoc! {
-                r##"
+                    user.name, user.id, m, file_id
+                },
+                None => formatdoc! {
+                    r##"
                     !{{"type":"user","raw":"@{}","id":"{}"}} からのQardです！
 
                     https://q.trap.jp/files/{}
                 "##,
-                user.name, user.id, file_id
-            },
-        };
-        bot_client
-            .post_message(&PostMessageParams {
-                content: message,
-                channel_id: card.id,
-                embed: false,
-            })
-            .await
+                    user.name, user.id, file_id
+                },
+            };
+            bot_client
+                .post_message(&PostMessageParams {
+                    content: message,
+                    channel_id: card.id,
+                    embed: false,
+                })
+                .await
+        });
+        join_all(sends).await
     });
+    join_all(sends).await;
 }
