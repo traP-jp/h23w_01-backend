@@ -2,15 +2,13 @@ use std::io::Cursor;
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use repository::image;
 use rocket::data::{Data, FromData, Outcome, ToByteUnit};
-use rocket::fs::NamedFile;
 use rocket::http::{ContentType, Status};
 use rocket::response::Responder;
 use rocket::serde::json::Json;
 use rocket::{Request, Response, Route, State};
 use serde::{Deserialize, Serialize};
-use uuid::{uuid, Uuid};
+use uuid::Uuid;
 
 use domain::repository::{CardModel, DateTimeUtc, SaveCardParams};
 
@@ -35,16 +33,6 @@ pub struct CardRequest {
     pub publish_channels: Vec<Uuid>,
     pub message: Option<String>,
     pub images: Vec<Uuid>,
-}
-
-async fn mock_card_response() -> CardResponse {
-    CardResponse {
-        id: uuid!("89d136ad-1ba2-4974-a44a-cc9b5c8c0670"),
-        owner_id: uuid!("56df9d96-19b7-4f7a-8695-b157ccb483fa"),
-        publish_date: "2023-12-13T08:10:05Z".parse().unwrap(),
-        publish_channels: vec![uuid!("0ccb58b0-5300-4842-a7e6-b19c674f7090")],
-        message: None,
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -121,7 +109,7 @@ impl<'a> FromData<'a> for Png {
 }
 
 impl<'r, 'o: 'r> Responder<'r, 'o> for Png {
-    fn respond_to(self, request: &'r Request<'_>) -> rocket::response::Result<'o> {
+    fn respond_to(self, _request: &'r Request<'_>) -> rocket::response::Result<'o> {
         let res = Response::build()
             .status(Status::Ok)
             .header(ContentType::PNG)
@@ -280,8 +268,6 @@ pub async fn delete_one(id: UuidParam, _card_repo: &State<CR>, _user: AuthUser<'
     println!("delete card id={id}");
     Status::NoContent
 }
-
-const CARD_ID: Uuid = uuid!("89d136ad-1ba2-4974-a44a-cc9b5c8c0670");
 
 #[rocket::get("/<id>/svg")]
 pub async fn get_svg(
