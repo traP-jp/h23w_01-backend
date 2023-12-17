@@ -30,7 +30,6 @@ pub struct ImageRepositoryConfig {
     pub account_id: String,
     pub access_key: String,
     pub secret_key: String,
-    pub path_style: bool,
 }
 
 impl ImageRepositoryConfig {
@@ -38,11 +37,9 @@ impl ImageRepositoryConfig {
         let var_suff = |suffix: &'static str| std::env::var(format!("{}{}", prefix, suffix));
         Ok(Self {
             bucket_name: var_suff("BUCKET_NAME")?,
-            // region: var_suff("REGION")?,
             account_id: var_suff("ACCOUNT_ID")?,
             access_key: var_suff("ACCESS_KEY")?,
             secret_key: var_suff("SECRET_KEY")?,
-            path_style: var_suff("PATH_STYLE")?.parse().expect("invalid bool"),
         })
     }
     pub fn backet(&self) -> Result<Bucket, RepositoryError> {
