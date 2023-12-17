@@ -8,10 +8,10 @@ use rocket::{Request, Route, State};
 use serde::{Deserialize, Serialize};
 use uuid::{uuid, Uuid};
 
-use domain::repository::{CardModel, DateTimeUtc};
+use domain::repository::{CardModel, DateTimeUtc, SaveCardParams};
 
 use crate::auth::AuthUser;
-use crate::{UuidParam, CR};
+use crate::{UuidParam, BC, CR};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -106,6 +106,32 @@ impl<'a> FromData<'a> for Png {
     }
 }
 
+async fn complete_card_response(
+    models: &[CardModel],
+    card_repo: &State<CR>,
+) -> anyhow::Result<Vec<CardResponse>> {
+    let mut completed = vec![];
+    for CardModel {
+        id,
+        owner_id,
+        publish_date,
+        message,
+    } in models
+    {
+        // WARN: N+1
+        let publish_channels = card_repo.0.get_publish_channels_by_id(*id).await?;
+        let res = CardResponse {
+            id: *id,
+            owner_id: *owner_id,
+            publish_date: *publish_date,
+            publish_channels,
+            message: message.clone(),
+        };
+        completed.push(res);
+    }
+    Ok(completed)
+}
+
 #[rocket::get("/")]
 pub async fn get_all(
     card_repo: &State<CR>,
@@ -115,47 +141,67 @@ pub async fn get_all(
         eprintln!("Error in get all cards: {}", e);
         Status::InternalServerError
     })?;
-    let mut response = vec![];
-    for CardModel {
-        id,
-        owner_id,
-        publish_date,
-        message,
-    } in card_models.into_iter()
-    {
-        // WARN: N+1
-        let publish_channels = card_repo
-            .0
-            .get_publish_channels_by_id(id)
-            .await
-            .map_err(|e| {
-                eprintln!("Error in get publish channels: {}", e);
-                Status::InternalServerError
-            })?;
-        let res = CardResponse {
-            id,
-            owner_id,
-            publish_date,
-            publish_channels,
-            message,
-        };
-        response.push(res);
-    }
+    let response = complete_card_response(&card_models, card_repo)
+        .await
+        .map_err(|e| {
+            eprintln!("Error in fetching publish dates: {}", e);
+            Status::InternalServerError
+        })?;
     Ok((Status::Ok, Json(response)))
 }
 
 #[rocket::post("/", data = "<card>")]
-pub async fn post(card: Json<CardRequest>, _card_repo: &State<CR>, _user: AuthUser<'_>) -> String {
-    println!("request card: {:?}", card.0);
-    "3e20b0e0-5672-4645-bf49-a2b69eafefc6".to_string()
+pub async fn post(
+    card: Json<CardRequest>,
+    card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> Result<(Status, String), Status> {
+    // TODO: imagesのIDをDBにcard_idとのrelationで入れたい
+    // GCのため
+    let CardRequest {
+        owner_id,
+        publish_date,
+        publish_channels,
+        message,
+        images: _image,
+    } = card.0;
+    let params = SaveCardParams {
+        id: Uuid::new_v4(),
+        owner_id,
+        publish_date,
+        message,
+        channels: publish_channels,
+    };
+    card_repo.0.save_card(&params).await.map_err(|e| {
+        eprintln!("error in post card: {}", e);
+        Status::InternalServerError
+    })?;
+    Ok((Status::Ok, params.id.to_string()))
 }
 
 #[rocket::get("/me")]
 pub async fn get_mine(
-    _card_repo: &State<CR>,
-    _user: AuthUser<'_>,
-) -> (Status, Json<Vec<CardResponse>>) {
-    (Status::Ok, Json(vec![]))
+    card_repo: &State<CR>,
+    bot_client: &State<BC>,
+    user: AuthUser<'_>,
+) -> Result<(Status, Json<Vec<CardResponse>>), Status> {
+    let name = user.id.ok_or(Status::Unauthorized)?;
+    let mut users = bot_client.0.get_users(Some(name)).await.map_err(|e| {
+        eprintln!("error while get_users by name={}: {}", name, e);
+        Status::InternalServerError
+    })?;
+    let user = users.pop().ok_or(Status::NotFound)?;
+    let card_models = card_repo.0.get_my_cards(user.id).await.map_err(|e| {
+        eprintln!("Error in get my cards: {}", e);
+        Status::InternalServerError
+    })?;
+    let response = complete_card_response(&card_models, card_repo)
+        .await
+        .map_err(|e| {
+            eprintln!("error in completing publish dates: {}", e);
+            Status::InternalServerError
+        })?;
+    Ok((Status::Ok, Json(response)))
 }
 
 #[rocket::get("/<id>")]
