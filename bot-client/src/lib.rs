@@ -87,8 +87,8 @@ impl BotClient for BotClientImpl {
         }
     }
 
-    async fn get_users(&self) -> Result<Vec<User>> {
-        Ok(user_api::get_users(&self.conf, None, None).await?)
+    async fn get_users<'a>(&'a self, name: Option<&'a str>) -> Result<Vec<User>> {
+        Ok(user_api::get_users(&self.conf, None, name).await?)
     }
 
     async fn get_user(&self, user_id: &str) -> Result<UserDetail> {
