@@ -6,6 +6,7 @@ use rocket::http::Status;
 use rocket::{routes, FromForm, Route};
 
 use crate::auth::AuthUser;
+use crate::UuidParam;
 
 #[derive(Debug, Clone)]
 pub enum FormImage {
@@ -45,7 +46,8 @@ pub struct ImageForm<'r> {
 }
 
 #[rocket::get("/<id>")]
-pub async fn get_one(id: &str, _user: AuthUser<'_>) -> Status {
+pub async fn get_one(id: UuidParam, _user: AuthUser<'_>) -> Status {
+    let id = id.0;
     println!("get image id {}", id);
     Status::NotImplemented
 }

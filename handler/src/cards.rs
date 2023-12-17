@@ -6,44 +6,39 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::{Request, Route, State};
 use serde::{Deserialize, Serialize};
+use uuid::{uuid, Uuid};
+
+use domain::repository::DateTimeUtc;
 
 use crate::auth::AuthUser;
-use crate::CR;
+use crate::{UuidParam, CR};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CardResponse {
-    // TODO: UUID
-    pub id: String,
-    // TOOD: UUID
-    pub owner_id: String,
-    // TODO: Datetime
-    pub publish_date: String,
-    // TODO: Vec<Uuid>
-    pub publish_channels: Vec<String>,
+    pub id: Uuid,
+    pub owner_id: Uuid,
+    pub publish_date: DateTimeUtc,
+    pub publish_channels: Vec<Uuid>,
     pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CardRequest {
-    // TOOD: UUID
-    pub owner_id: String,
-    // TODO: Datetime
-    pub publish_date: String,
-    // TODO: Vec<Uuid>
-    pub publish_channels: Vec<String>,
+    pub owner_id: Uuid,
+    pub publish_date: DateTimeUtc,
+    pub publish_channels: Vec<Uuid>,
     pub message: Option<String>,
-    // TODO: Vec<Uuid>
-    pub images: Vec<String>,
+    pub images: Vec<Uuid>,
 }
 
 async fn mock_card_response() -> CardResponse {
     CardResponse {
-        id: "89d136ad-1ba2-4974-a44a-cc9b5c8c0670".to_string(),
-        owner_id: "56df9d96-19b7-4f7a-8695-b157ccb483fa".to_string(),
-        publish_date: "2023-12-13T08:10:05Z".to_string(),
-        publish_channels: vec!["0ccb58b0-5300-4842-a7e6-b19c674f7090".to_string()],
+        id: uuid!("89d136ad-1ba2-4974-a44a-cc9b5c8c0670"),
+        owner_id: uuid!("56df9d96-19b7-4f7a-8695-b157ccb483fa"),
+        publish_date: "2023-12-13T08:10:05Z".parse().unwrap(),
+        publish_channels: vec![uuid!("0ccb58b0-5300-4842-a7e6-b19c674f7090")],
         message: None,
     }
 }
@@ -137,32 +132,34 @@ pub async fn get_mine(
 
 #[rocket::get("/<id>")]
 pub async fn get_one(
-    id: String,
+    id: UuidParam,
     _card_repo: &State<CR>,
     _user: AuthUser<'_>,
-) -> (Status, Option<Json<CardResponse>>) {
+) -> Result<(Status, Json<CardResponse>), Status> {
     let mc = mock_card_response().await;
-    if id != mc.id {
-        (Status::NotFound, None)
+    if id.0 != mc.id {
+        Err(Status::NotFound)
     } else {
-        (Status::Ok, Some(Json(mc)))
+        Ok((Status::Ok, Json(mc)))
     }
 }
 
 #[rocket::delete("/<id>")]
-pub async fn delete_one(id: String, _card_repo: &State<CR>, _user: AuthUser<'_>) -> Status {
+pub async fn delete_one(id: UuidParam, _card_repo: &State<CR>, _user: AuthUser<'_>) -> Status {
+    let id = id.0;
     println!("delete card id={id}");
     Status::NoContent
 }
 
-const CARD_ID: &str = "89d136ad-1ba2-4974-a44a-cc9b5c8c0670";
+const CARD_ID: Uuid = uuid!("89d136ad-1ba2-4974-a44a-cc9b5c8c0670");
 
 #[rocket::get("/<id>/svg")]
 pub async fn get_svg(
-    id: String,
+    id: UuidParam,
     _card_repo: &State<CR>,
     _user: AuthUser<'_>,
 ) -> (Status, Option<NamedFile>) {
+    let id = id.0;
     println!("get image.svg {}", id);
     if id != CARD_ID {
         return (Status::NotFound, None);
@@ -174,7 +171,13 @@ pub async fn get_svg(
 }
 
 #[rocket::post("/<id>/svg", data = "<svg>")]
-pub async fn post_svg(svg: Svg, id: String, _card_repo: &State<CR>, _user: AuthUser<'_>) -> Status {
+pub async fn post_svg(
+    svg: Svg,
+    id: UuidParam,
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> Status {
+    let id = id.0;
     println!("post image.svg {} with size {}", id, svg.0.len());
     Status::NoContent
 }
@@ -182,20 +185,22 @@ pub async fn post_svg(svg: Svg, id: String, _card_repo: &State<CR>, _user: AuthU
 #[rocket::patch("/<id>/svg", data = "<svg>")]
 pub async fn patch_svg(
     svg: Svg,
-    id: String,
+    id: UuidParam,
     _card_repo: &State<CR>,
     _user: AuthUser<'_>,
 ) -> Status {
+    let id = id.0;
     println!("patch image.svg {} with size {}", id, svg.0.len());
     Status::NoContent
 }
 
 #[rocket::get("/<id>/png")]
 pub async fn get_png(
-    id: String,
+    id: UuidParam,
     _card_repo: &State<CR>,
     _user: AuthUser<'_>,
 ) -> (Status, Option<NamedFile>) {
+    let id = id.0;
     println!("get image.png {}", id);
     if id != CARD_ID {
         return (Status::NotFound, None);
@@ -207,7 +212,13 @@ pub async fn get_png(
 }
 
 #[rocket::post("/<id>/png", data = "<png>")]
-pub async fn post_png(png: Png, id: String, _card_repo: &State<CR>, _user: AuthUser<'_>) -> Status {
+pub async fn post_png(
+    png: Png,
+    id: UuidParam,
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> Status {
+    let id = id.0;
     println!("post image.png {} with size {}", id, png.0.len());
     Status::NoContent
 }
@@ -215,10 +226,11 @@ pub async fn post_png(png: Png, id: String, _card_repo: &State<CR>, _user: AuthU
 #[rocket::patch("/<id>/png", data = "<png>")]
 pub async fn patch_png(
     png: Png,
-    id: String,
+    id: UuidParam,
     _card_repo: &State<CR>,
     _user: AuthUser<'_>,
 ) -> Status {
+    let id = id.0;
     println!("patch image.png {} with size {}", id, png.0.len());
     Status::NoContent
 }

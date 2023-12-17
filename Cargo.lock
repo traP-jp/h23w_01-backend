@@ -1312,6 +1312,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bytes",
+ "chrono",
  "domain",
  "itertools 0.12.0",
  "repository",
@@ -1320,6 +1321,7 @@ dependencies = [
  "shaku",
  "tokio",
  "traq-bot-http",
+ "uuid",
 ]
 
 [[package]]
