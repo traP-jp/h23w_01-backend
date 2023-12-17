@@ -9,7 +9,7 @@ use sea_orm_migration::MigratorTrait;
 use uuid::Uuid;
 
 use domain::repository::{
-    CardModel, CardRepository, DateTimeUtc, MigrationStrategy, SaveCardParams, SaveImageParams,
+    CardModel, CardRepository, MigrationStrategy, SaveCardParams, SaveImageParams,
 };
 
 use migration::Migrator;
