@@ -15,27 +15,11 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::publish_channel::Entity")]
     PublishChannel,
-    #[sea_orm(has_one = "super::card_svg::Entity")]
-    CardSvg,
-    #[sea_orm(has_one = "super::card_png::Entity")]
-    CardPng,
 }
 
 impl Related<super::publish_channel::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::PublishChannel.def()
-    }
-}
-
-impl Related<super::card_svg::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::CardSvg.def()
-    }
-}
-
-impl Related<super::card_png::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::CardPng.def()
     }
 }
 
