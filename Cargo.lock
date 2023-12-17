@@ -2539,6 +2539,7 @@ dependencies = [
  "chrono",
  "domain",
  "entity",
+ "futures",
  "migration",
  "rust-s3",
  "sea-orm",

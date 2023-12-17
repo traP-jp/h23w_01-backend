@@ -12,6 +12,11 @@ pub trait CardRepository: Interface {
     type Error;
 
     async fn migrate(&self, strategy: MigrationStrategy) -> Result<(), Self::Error>;
+    async fn get_card_with_channels_by_date(
+        &self,
+        start: DateTimeUtc,
+        end: DateTimeUtc,
+    ) -> Result<Vec<(CardModel, Vec<PublishChannelModel>)>, Self::Error>;
     async fn save_card(&self, params: &SaveCardParams) -> Result<(), Self::Error>;
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, Self::Error>;
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, Self::Error>;
@@ -50,6 +55,12 @@ pub struct CardModel {
     pub owner_id: Uuid,
     pub publish_date: NaiveDateTime,
     pub message: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublishChannelModel {
+    pub id: Uuid,
+    pub card_id: Uuid,
 }
 
 #[derive(Debug, Clone)]

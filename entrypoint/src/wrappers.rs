@@ -7,7 +7,8 @@ use domain::bot_client::{
     UploadFileResp, User, UserDetail,
 };
 use domain::repository::{
-    CardModel, CardRepository, ImageRepository, MigrationStrategy, SaveCardParams,
+    CardModel, CardRepository, DateTimeUtc, ImageRepository, MigrationStrategy,
+    PublishChannelModel, SaveCardParams,
 };
 
 pub struct BotClientWrapper<T: BotClient>(pub T);
@@ -71,6 +72,13 @@ where
     }
     async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, Self::Error> {
         Ok(self.0.delete_card(card_id).await?)
+    }
+    async fn get_card_with_channels_by_date(
+        &self,
+        start: DateTimeUtc,
+        end: DateTimeUtc,
+    ) -> Result<Vec<(CardModel, Vec<PublishChannelModel>)>, Self::Error> {
+        Ok(self.0.get_card_with_channels_by_date(start, end).await?)
     }
 }
 
