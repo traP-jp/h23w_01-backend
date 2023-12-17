@@ -1,14 +1,16 @@
 use crate::error::RepositoryError;
 use entity::prelude::*;
 use sea_orm::{
-    ActiveValue, ColumnTrait, ConnectOptions, Database, DatabaseConnection, DbErr, EntityTrait,
-    QueryFilter, TransactionTrait,
+    ActiveValue, ColumnTrait, Condition, ConnectOptions, Database, DatabaseConnection, DbErr,
+    EntityTrait, QueryFilter, TransactionTrait,
 };
 use sea_orm_migration::MigratorTrait;
 use std::env::{var, VarError};
 use uuid::Uuid;
 
-use domain::repository::{CardModel, CardRepository, MigrationStrategy, SaveCardParams};
+use domain::repository::{
+    CardModel, CardRepository, DateTimeUtc, MigrationStrategy, PublishChannelModel, SaveCardParams,
+};
 
 use migration::Migrator;
 
@@ -110,6 +112,36 @@ impl CardRepository for CardRepositoryImpl {
         Ok(cards)
     }
 
+    async fn get_card_with_channels_by_date(
+        &self,
+        start: DateTimeUtc,
+        end: DateTimeUtc,
+    ) -> Result<Vec<(CardModel, Vec<PublishChannelModel>)>, RepositoryError> {
+        let db = &self.0;
+        let cards = Card::find()
+            .filter(
+                Condition::all()
+                    .add(CardColumn::PublishDate.gte(start))
+                    .add(CardColumn::PublishDate.lte(end)),
+            )
+            .all(db)
+            .await?
+            .into_iter()
+            .map(CardModel::from);
+        let cards_with_channels = cards.map(|card| async {
+            let channels: Vec<PublishChannelModel> = PublishChannel::find()
+                .filter(PublishChannelColumn::CardId.eq(card.id))
+                .all(db)
+                .await
+                .unwrap()
+                .into_iter()
+                .map(PublishChannelModel::from)
+                .collect();
+            (card, channels)
+        });
+        let cards_with_channels = futures::future::join_all(cards_with_channels).await;
+        Ok(cards_with_channels)
+    }
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, RepositoryError> {
         let db = &self.0;
         let cards = Card::find()

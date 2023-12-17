@@ -14,6 +14,7 @@ sea-orm-migration = "0.12.9"
 rust-s3.workspace = true
 thiserror.workspace = true
 bytes.workspace = true
+futures.workspace = true
 
 entity.path = "../entity"
 migration.path = "../migration"
@@ -21,4 +22,10 @@ domain.path = "../domain"
 
 [dependencies.sea-orm]
 version = "0.12.9"
-features = ["sqlx-mysql", "runtime-tokio-native-tls", "macros", "with-chrono", "with-uuid"]
+features = [
+    "sqlx-mysql",
+    "runtime-tokio-native-tls",
+    "macros",
+    "with-chrono",
+    "with-uuid",
+]

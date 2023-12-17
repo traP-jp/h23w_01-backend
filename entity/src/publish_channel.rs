@@ -1,3 +1,4 @@
+use domain::repository::PublishChannelModel;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +9,20 @@ pub struct Model {
     pub id: Uuid,
     #[sea_orm(primary_key, auto_increment = false)]
     pub card_id: Uuid,
+}
+
+impl From<PublishChannelModel> for Model {
+    fn from(value: PublishChannelModel) -> Self {
+        let PublishChannelModel { id, card_id } = value;
+        Self { id, card_id }
+    }
+}
+
+impl From<Model> for PublishChannelModel {
+    fn from(value: Model) -> Self {
+        let Model { id, card_id } = value;
+        Self { id, card_id }
+    }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

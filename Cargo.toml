@@ -1,6 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["domain", "handler", "repository", "migration", "entity", "bot-client", "entrypoint"]
+members = [
+    "domain",
+    "handler",
+    "repository",
+    "migration",
+    "entity",
+    "bot-client",
+    "entrypoint",
+    "cron",
+]
 
 [workspace.dependencies]
 tokio = { version = "1.35.0", features = ["full"] }
@@ -20,3 +29,5 @@ rocket = { version = "0.5", features = ["json"] }
 traq-bot-http = "0.8.0"
 shaku = "0.6.1"
 anyhow = "1.0.75"
+tokio-cron-scheduler = "0.9.4"
+futures = "0.3.29"
