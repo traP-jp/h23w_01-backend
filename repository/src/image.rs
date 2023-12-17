@@ -1,6 +1,6 @@
 use crate::error::RepositoryError;
 use bytes::Bytes;
-use s3::{creds::Credentials, error::S3Error, Bucket};
+use s3::{creds::Credentials, error::S3Error, Bucket, Region};
 use uuid::Uuid;
 
 #[async_trait::async_trait]
@@ -26,7 +26,8 @@ pub trait ImageRepository {
 pub struct ImageRepositoryConfig {
     pub bucket_name: String,
     // endpoint URL
-    pub region: String,
+    // pub region: String,
+    pub account_id: String,
     pub access_key: String,
     pub secret_key: String,
     pub path_style: bool,
@@ -37,7 +38,8 @@ impl ImageRepositoryConfig {
         let var_suff = |suffix: &'static str| std::env::var(format!("{}{}", prefix, suffix));
         Ok(Self {
             bucket_name: var_suff("BUCKET_NAME")?,
-            region: var_suff("REGION")?,
+            // region: var_suff("REGION")?,
+            account_id: var_suff("ACCOUNT_ID")?,
             access_key: var_suff("ACCESS_KEY")?,
             secret_key: var_suff("SECRET_KEY")?,
             path_style: var_suff("PATH_STYLE")?.parse().expect("invalid bool"),
@@ -46,7 +48,10 @@ impl ImageRepositoryConfig {
     pub fn backet(&self) -> Result<Bucket, RepositoryError> {
         let bucket = Bucket::new(
             &self.bucket_name,
-            self.region.parse()?,
+            // self.region.parse()?,
+            Region::R2 {
+                account_id: self.account_id.clone(),
+            },
             Credentials::new(
                 Some(&self.access_key),
                 Some(&self.secret_key),
