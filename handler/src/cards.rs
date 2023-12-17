@@ -339,24 +339,28 @@ pub async fn get_png(
 pub async fn post_png(
     png: Png,
     id: UuidParam,
-    _card_repo: &State<CR>,
+    image_repo: &State<IR>,
     _user: AuthUser<'_>,
-) -> Status {
-    let id = id.0;
-    println!("post image.png {} with size {}", id, png.0.len());
-    Status::NoContent
+) -> Result<Status, Status> {
+    image_repo.0.save_png(id.0, &png.0).await.map_err(|e| {
+        eprintln!("error in create png: {}", e);
+        Status::InternalServerError
+    })?;
+    Ok(Status::NoContent)
 }
 
 #[rocket::patch("/<id>/png", data = "<png>")]
 pub async fn patch_png(
     png: Png,
     id: UuidParam,
-    _card_repo: &State<CR>,
+    image_repo: &State<IR>,
     _user: AuthUser<'_>,
-) -> Status {
-    let id = id.0;
-    println!("patch image.png {} with size {}", id, png.0.len());
-    Status::NoContent
+) -> Result<Status, Status> {
+    image_repo.0.save_png(id.0, &png.0).await.map_err(|e| {
+        eprintln!("error in update png: {}", e);
+        Status::InternalServerError
+    })?;
+    Ok(Status::NoContent)
 }
 
 pub fn routes() -> Vec<Route> {
