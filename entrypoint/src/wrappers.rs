@@ -60,6 +60,9 @@ where
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, Self::Error> {
         Ok(self.0.get_card_by_id(card_id).await?)
     }
+    async fn get_publish_channels_by_id(&self, card_id: Uuid) -> Result<Vec<Uuid>, Self::Error> {
+        Ok(self.0.get_publish_channels_by_id(card_id).await?)
+    }
     async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, Self::Error> {
         Ok(self.0.delete_card(card_id).await?)
     }
