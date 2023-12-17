@@ -73,7 +73,7 @@ pub mod stamps {
     pub async fn get_all(
         r#type: Option<StampType>,
         client: &State<BC>,
-        _user: AuthUser<'_>,
+        _user: AuthUser,
     ) -> Result<Json<Stamps>, Status> {
         client
             .0
@@ -90,7 +90,7 @@ pub mod stamps {
     pub async fn get_one(
         id: &str,
         client: &State<BC>,
-        _user: AuthUser<'_>,
+        _user: AuthUser,
     ) -> Result<ResponseImage, Status> {
         client
             .0
@@ -119,7 +119,7 @@ pub mod users {
     pub async fn get_all(
         name: Option<&str>,
         client: &State<BC>,
-        _user: AuthUser<'_>,
+        _user: AuthUser,
     ) -> Result<Json<Users>, Status> {
         client.0.get_users(name).await.map(Json).map_err(|e| {
             eprintln!("Error in get_users: {}", e);
@@ -131,7 +131,7 @@ pub mod users {
     pub async fn get_detail(
         id: &str,
         client: &State<BC>,
-        _user: AuthUser<'_>,
+        _user: AuthUser,
     ) -> Result<Json<UserDetail>, Status> {
         client.0.get_user(id).await.map(Json).map_err(|e| {
             eprintln!("Error in get_user: {}", e);
@@ -143,7 +143,7 @@ pub mod users {
     pub async fn get_icon(
         id: &str,
         client: &State<BC>,
-        _user: AuthUser<'_>,
+        _user: AuthUser,
     ) -> Result<ResponseImage, Status> {
         client
             .0
@@ -166,10 +166,7 @@ pub mod channels {
     use super::*;
 
     #[rocket::get("/")]
-    pub async fn get_all(
-        client: &State<BC>,
-        _user: AuthUser<'_>,
-    ) -> Result<Json<ChannelList>, Status> {
+    pub async fn get_all(client: &State<BC>, _user: AuthUser) -> Result<Json<ChannelList>, Status> {
         client.0.get_channels().await.map(Json).map_err(|e| {
             eprintln!("Error in get_channels: {}", e);
             Status::InternalServerError

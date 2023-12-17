@@ -66,7 +66,7 @@ impl<'r, 'o: 'r> Responder<'r, 'o> for ImageResponse {
 pub async fn get_one(
     id: UuidParam,
     image_repo: &State<IR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<ImageResponse, Status> {
     let image = image_repo
         .0
@@ -84,7 +84,7 @@ pub async fn get_one(
 pub async fn post(
     form_data: Form<ImageForm<'_>>,
     image_repo: &State<IR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<Status, Status> {
     let ImageForm { id, image } = form_data.into_inner();
     let id = id.parse().map_err(|_| Status::BadRequest)?;

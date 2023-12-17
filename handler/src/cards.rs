@@ -13,7 +13,7 @@ use uuid::Uuid;
 use domain::repository::{CardModel, DateTimeUtc, SaveCardParams};
 
 use crate::auth::AuthUser;
-use crate::{UuidParam, BC, CR, IR};
+use crate::{UuidParam, CR, IR};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -169,20 +169,9 @@ async fn complete_card_response(
 #[rocket::get("/")]
 pub async fn get_all(
     card_repo: &State<CR>,
-    bot_client: &State<BC>,
-    user: AuthUser<'_>,
+    user: AuthUser,
 ) -> Result<(Status, Json<Vec<CardResponse>>), Status> {
-    use uuid::uuid;
-
-    let name = user.id.ok_or(Status::Unauthorized)?;
-    let mut users = bot_client.0.get_users(Some(name)).await.map_err(|e| {
-        eprintln!("error while get_users by name={}: {}", name, e);
-        Status::InternalServerError
-    })?;
-    let user_id = users
-        .pop()
-        .map(|u| u.id)
-        .unwrap_or(uuid!("00000000-0000-0000-0000-000000000000"));
+    let user = user.0.ok_or(Status::Unauthorized)?;
     let now = chrono::Utc::now();
 
     let card_models: Vec<_> = card_repo
@@ -194,7 +183,7 @@ pub async fn get_all(
             Status::InternalServerError
         })?
         .into_iter()
-        .filter(|c| c.owner_id == user_id || c.publish_date < now)
+        .filter(|c| c.owner_id == user.id || c.publish_date < now)
         .collect();
     let response = complete_card_response(&card_models, card_repo)
         .await
@@ -209,7 +198,7 @@ pub async fn get_all(
 pub async fn post(
     card: Json<CardRequest>,
     card_repo: &State<CR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<(Status, String), Status> {
     // TODO: imagesのIDをDBにcard_idとのrelationで入れたい
     // GCのため
@@ -237,15 +226,9 @@ pub async fn post(
 #[rocket::get("/me")]
 pub async fn get_mine(
     card_repo: &State<CR>,
-    bot_client: &State<BC>,
-    user: AuthUser<'_>,
+    user: AuthUser,
 ) -> Result<(Status, Json<Vec<CardResponse>>), Status> {
-    let name = user.id.ok_or(Status::Unauthorized)?;
-    let mut users = bot_client.0.get_users(Some(name)).await.map_err(|e| {
-        eprintln!("error while get_users by name={}: {}", name, e);
-        Status::InternalServerError
-    })?;
-    let user = users.pop().ok_or(Status::NotFound)?;
+    let user = user.0.ok_or(Status::Unauthorized)?;
     let card_models = card_repo.0.get_my_cards(user.id).await.map_err(|e| {
         eprintln!("Error in get my cards: {}", e);
         Status::InternalServerError
@@ -263,7 +246,7 @@ pub async fn get_mine(
 pub async fn get_one(
     id: UuidParam,
     card_repo: &State<CR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<(Status, Json<CardResponse>), Status> {
     let card_model = card_repo
         .0
@@ -288,7 +271,7 @@ pub async fn update(
     id: UuidParam,
     card: Json<CardRequest>,
     card_repo: &State<CR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<Status, Status> {
     let CardRequest {
         owner_id,
@@ -319,18 +302,11 @@ pub async fn update(
 #[rocket::delete("/<id>")]
 pub async fn delete_one(
     id: UuidParam,
-    bot_client: &State<BC>,
     card_repo: &State<CR>,
     image_repo: &State<IR>,
-    user: AuthUser<'_>,
+    user: AuthUser,
 ) -> Result<Status, Status> {
-    // ユーザー確認
-    let mut users = bot_client
-        .0
-        .get_users(user.id)
-        .await
-        .map_err(|_| Status::Unauthorized)?;
-    let user = users.pop().ok_or(Status::Unauthorized)?;
+    let user = user.0.ok_or(Status::Unauthorized)?;
 
     let id = id.0;
     // 存在確認
@@ -392,7 +368,7 @@ pub async fn delete_one(
 pub async fn get_svg(
     id: UuidParam,
     image_repo: &State<IR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<Svg, Status> {
     let res = image_repo
         .0
@@ -412,7 +388,7 @@ pub async fn post_svg(
     id: UuidParam,
     image_repo: &State<IR>,
     _card_repo: &State<CR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<Status, Status> {
     image_repo.0.save_svg(id.0, &svg.0).await.map_err(|e| {
         eprintln!("error in create svg: {}", e);
@@ -427,7 +403,7 @@ pub async fn patch_svg(
     id: UuidParam,
     image_repo: &State<IR>,
     _card_repo: &State<CR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<Status, Status> {
     image_repo.0.save_svg(id.0, &svg.0).await.map_err(|e| {
         eprintln!("error in update svg: {}", e);
@@ -440,7 +416,7 @@ pub async fn patch_svg(
 pub async fn get_png(
     id: UuidParam,
     image_repo: &State<IR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<Png, Status> {
     let png = image_repo
         .0
@@ -459,7 +435,7 @@ pub async fn post_png(
     png: Png,
     id: UuidParam,
     image_repo: &State<IR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<Status, Status> {
     image_repo.0.save_png(id.0, &png.0).await.map_err(|e| {
         eprintln!("error in create png: {}", e);
@@ -473,7 +449,7 @@ pub async fn patch_png(
     png: Png,
     id: UuidParam,
     image_repo: &State<IR>,
-    _user: AuthUser<'_>,
+    _user: AuthUser,
 ) -> Result<Status, Status> {
     image_repo.0.save_png(id.0, &png.0).await.map_err(|e| {
         eprintln!("error in update png: {}", e);
