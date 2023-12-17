@@ -284,10 +284,50 @@ pub async fn get_one(
 }
 
 #[rocket::delete("/<id>")]
-pub async fn delete_one(id: UuidParam, _card_repo: &State<CR>, _user: AuthUser<'_>) -> Status {
+pub async fn delete_one(
+    id: UuidParam,
+    card_repo: &State<CR>,
+    image_repo: &State<IR>,
+    _user: AuthUser<'_>,
+) -> Result<Status, Status> {
     let id = id.0;
-    println!("delete card id={id}");
-    Status::NoContent
+    card_repo
+        .0
+        .delete_card(id)
+        .await
+        .map_err(|e| {
+            eprintln!("error in delete card: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let pub_chans = card_repo
+        .0
+        .get_publish_channels_by_id(id)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get pub_chans: {}", e);
+            Status::InternalServerError
+        })?;
+    for channel_id in pub_chans {
+        card_repo
+            .0
+            .delete_publish_channel(id, channel_id)
+            .await
+            .map_err(|e| {
+                eprintln!("error in delete publish channel: {}", e);
+                Status::InternalServerError
+            })?
+            .ok_or(Status::InternalServerError)?;
+    }
+    image_repo.0.delete_svg(id).await.map_err(|e| {
+        eprintln!("error in delete svg: {}", e);
+        Status::InternalServerError
+    })?;
+    image_repo.0.delete_png(id).await.map_err(|e| {
+        eprintln!("error in delete png: {}", e);
+        Status::InternalServerError
+    })?;
+    Ok(Status::NoContent)
 }
 
 #[rocket::get("/<id>/svg")]

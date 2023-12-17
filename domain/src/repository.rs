@@ -21,6 +21,11 @@ pub trait CardRepository: Interface {
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, Self::Error>;
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, Self::Error>;
     async fn get_publish_channels_by_id(&self, card_id: Uuid) -> Result<Vec<Uuid>, Self::Error>;
+    async fn delete_publish_channel(
+        &self,
+        card_id: Uuid,
+        channel_id: Uuid,
+    ) -> Result<Option<()>, Self::Error>;
     async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, Self::Error>;
 }
 

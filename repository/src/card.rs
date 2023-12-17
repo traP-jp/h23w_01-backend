@@ -175,6 +175,21 @@ impl CardRepository for CardRepositoryImpl {
             .collect();
         Ok(pub_chans)
     }
+    async fn delete_publish_channel(
+        &self,
+        card_id: Uuid,
+        channel_id: Uuid,
+    ) -> Result<Option<()>, Self::Error> {
+        let db = &self.0;
+        let result = PublishChannel::delete_by_id((card_id, channel_id))
+            .exec(db)
+            .await;
+        match result {
+            Ok(_) => Ok(Some(())),
+            Err(DbErr::RecordNotFound(_)) => Ok(None),
+            Err(e) => Err(RepositoryError::DbErr(e)),
+        }
+    }
     async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, RepositoryError> {
         let db = &self.0;
         let result = Card::delete_by_id(card_id).exec(db).await;
