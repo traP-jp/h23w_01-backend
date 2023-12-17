@@ -1,17 +1,21 @@
+use std::io::Cursor;
+
 use async_trait::async_trait;
 use bytes::Bytes;
+use repository::image;
 use rocket::data::{Data, FromData, Outcome, ToByteUnit};
 use rocket::fs::NamedFile;
-use rocket::http::Status;
+use rocket::http::{ContentType, Status};
+use rocket::response::Responder;
 use rocket::serde::json::Json;
-use rocket::{Request, Route, State};
+use rocket::{Request, Response, Route, State};
 use serde::{Deserialize, Serialize};
 use uuid::{uuid, Uuid};
 
 use domain::repository::{CardModel, DateTimeUtc, SaveCardParams};
 
 use crate::auth::AuthUser;
-use crate::{UuidParam, BC, CR};
+use crate::{UuidParam, BC, CR, IR};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -76,6 +80,16 @@ impl<'a> FromData<'a> for Svg {
     }
 }
 
+impl<'r, 'o: 'r> Responder<'r, 'o> for Svg {
+    fn respond_to(self, request: &'r Request<'_>) -> rocket::response::Result<'o> {
+        let res = Response::build_from(self.0.respond_to(request)?)
+            .status(Status::Ok)
+            .header(ContentType::SVG)
+            .finalize();
+        Ok(res)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Png(Bytes);
 
@@ -104,6 +118,38 @@ impl<'a> FromData<'a> for Png {
         };
         Outcome::Success(Png(data.into_inner().into()))
     }
+}
+
+impl<'r, 'o: 'r> Responder<'r, 'o> for Png {
+    fn respond_to(self, request: &'r Request<'_>) -> rocket::response::Result<'o> {
+        let res = Response::build()
+            .status(Status::Ok)
+            .header(ContentType::PNG)
+            .sized_body(self.0.len(), Cursor::new(self.0))
+            .finalize();
+        Ok(res)
+    }
+}
+
+async fn complete_card_response_one(
+    model: &CardModel,
+    card_repo: &State<CR>,
+) -> anyhow::Result<CardResponse> {
+    let CardModel {
+        id,
+        owner_id,
+        publish_date,
+        message,
+    } = model;
+    let publish_channels = card_repo.0.get_publish_channels_by_id(*id).await?;
+    let res = CardResponse {
+        id: *id,
+        owner_id: *owner_id,
+        publish_date: *publish_date,
+        publish_channels,
+        message: message.clone(),
+    };
+    Ok(res)
 }
 
 async fn complete_card_response(
@@ -207,15 +253,25 @@ pub async fn get_mine(
 #[rocket::get("/<id>")]
 pub async fn get_one(
     id: UuidParam,
-    _card_repo: &State<CR>,
+    card_repo: &State<CR>,
     _user: AuthUser<'_>,
 ) -> Result<(Status, Json<CardResponse>), Status> {
-    let mc = mock_card_response().await;
-    if id.0 != mc.id {
-        Err(Status::NotFound)
-    } else {
-        Ok((Status::Ok, Json(mc)))
-    }
+    let card_model = card_repo
+        .0
+        .get_card_by_id(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let res = complete_card_response_one(&card_model, card_repo)
+        .await
+        .map_err(|e| {
+            eprintln!("error in complete publish date: {}", e);
+            Status::InternalServerError
+        })?;
+    Ok((Status::Ok, Json(res)))
 }
 
 #[rocket::delete("/<id>")]
@@ -230,59 +286,67 @@ const CARD_ID: Uuid = uuid!("89d136ad-1ba2-4974-a44a-cc9b5c8c0670");
 #[rocket::get("/<id>/svg")]
 pub async fn get_svg(
     id: UuidParam,
-    _card_repo: &State<CR>,
+    image_repo: &State<IR>,
     _user: AuthUser<'_>,
-) -> (Status, Option<NamedFile>) {
-    let id = id.0;
-    println!("get image.svg {}", id);
-    if id != CARD_ID {
-        return (Status::NotFound, None);
-    }
-    (
-        Status::Ok,
-        NamedFile::open("./mock-assets/sample.svg").await.ok(),
-    )
+) -> Result<Svg, Status> {
+    let res = image_repo
+        .0
+        .get_svg(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get svg: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    Ok(Svg(res))
 }
 
 #[rocket::post("/<id>/svg", data = "<svg>")]
 pub async fn post_svg(
     svg: Svg,
     id: UuidParam,
+    image_repo: &State<IR>,
     _card_repo: &State<CR>,
     _user: AuthUser<'_>,
-) -> Status {
-    let id = id.0;
-    println!("post image.svg {} with size {}", id, svg.0.len());
-    Status::NoContent
+) -> Result<Status, Status> {
+    image_repo.0.save_svg(id.0, &svg.0).await.map_err(|e| {
+        eprintln!("error in create svg: {}", e);
+        Status::InternalServerError
+    })?;
+    Ok(Status::NoContent)
 }
 
 #[rocket::patch("/<id>/svg", data = "<svg>")]
 pub async fn patch_svg(
     svg: Svg,
     id: UuidParam,
+    image_repo: &State<IR>,
     _card_repo: &State<CR>,
     _user: AuthUser<'_>,
-) -> Status {
-    let id = id.0;
-    println!("patch image.svg {} with size {}", id, svg.0.len());
-    Status::NoContent
+) -> Result<Status, Status> {
+    image_repo.0.save_svg(id.0, &svg.0).await.map_err(|e| {
+        eprintln!("error in update svg: {}", e);
+        Status::InternalServerError
+    })?;
+    Ok(Status::NoContent)
 }
 
 #[rocket::get("/<id>/png")]
 pub async fn get_png(
     id: UuidParam,
-    _card_repo: &State<CR>,
+    image_repo: &State<IR>,
     _user: AuthUser<'_>,
-) -> (Status, Option<NamedFile>) {
-    let id = id.0;
-    println!("get image.png {}", id);
-    if id != CARD_ID {
-        return (Status::NotFound, None);
-    }
-    (
-        Status::Ok,
-        NamedFile::open("./mock-assets/sample.png").await.ok(),
-    )
+) -> Result<Png, Status> {
+    let png = image_repo
+        .0
+        .get_png(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get png: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    Ok(Png(png))
 }
 
 #[rocket::post("/<id>/png", data = "<png>")]
