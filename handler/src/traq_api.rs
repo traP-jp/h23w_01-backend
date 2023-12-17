@@ -3,9 +3,11 @@ use rocket::response::{Responder, Response};
 use rocket::serde::json::Json;
 use rocket::{Request, Route, State};
 
-use bot_client::{BotClient, ImageData};
+use domain::bot_client::StampType as RawStampType;
+use domain::bot_client::{ChannelList, ImageData, Stamp, User, UserDetail};
 
 use crate::auth::AuthUser;
+use crate::BC;
 
 type Routes = Vec<Route>;
 
@@ -42,22 +44,22 @@ pub mod stamps {
     use super::*;
 
     use rocket::form::{self, FromFormField, ValueField};
-    use traq::models::Stamp;
+    use Stamp;
 
     type Stamps = Vec<Stamp>;
 
     #[derive(Debug, Clone, Copy)]
-    pub struct StampType(bot_client::StampType);
+    pub struct StampType(RawStampType);
 
-    impl From<bot_client::StampType> for StampType {
-        fn from(t: bot_client::StampType) -> Self {
+    impl From<RawStampType> for StampType {
+        fn from(t: RawStampType) -> Self {
             Self(t)
         }
     }
 
     impl<'r> FromFormField<'r> for StampType {
         fn from_value(field: ValueField<'r>) -> form::Result<'r, Self> {
-            use bot_client::StampType::*;
+            use RawStampType::*;
             match field.value {
                 "original" => Ok(Self(Original)),
                 "unicode" => Ok(Self(Unicode)),
@@ -70,11 +72,12 @@ pub mod stamps {
     #[rocket::get("/?<type>")]
     pub async fn get_all(
         r#type: Option<StampType>,
-        client: &State<BotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<Json<Stamps>, Status> {
         client
-            .get_stamps(r#type.unwrap_or(bot_client::StampType::None.into()).0)
+            .0
+            .get_stamps(r#type.unwrap_or(RawStampType::None.into()).0)
             .await
             .map(Json)
             .map_err(|e| {
@@ -86,10 +89,11 @@ pub mod stamps {
     #[rocket::get("/<id>/image")]
     pub async fn get_one(
         id: &str,
-        client: &State<BotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<ResponseImage, Status> {
         client
+            .0
             .get_stamp_image(id)
             .await
             .map(ResponseImage)
@@ -106,18 +110,14 @@ pub mod stamps {
 }
 
 pub mod users {
-    use super::*;
 
-    use traq::models::{User, UserDetail};
+    use super::*;
 
     type Users = Vec<User>;
 
     #[rocket::get("/")]
-    pub async fn get_all(
-        client: &State<BotClient>,
-        _user: AuthUser<'_>,
-    ) -> Result<Json<Users>, Status> {
-        client.get_users().await.map(Json).map_err(|e| {
+    pub async fn get_all(client: &State<BC>, _user: AuthUser<'_>) -> Result<Json<Users>, Status> {
+        client.0.get_users().await.map(Json).map_err(|e| {
             eprintln!("Error in get_users: {}", e);
             Status::InternalServerError
         })
@@ -126,10 +126,10 @@ pub mod users {
     #[rocket::get("/<id>")]
     pub async fn get_detail(
         id: &str,
-        client: &State<BotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<Json<UserDetail>, Status> {
-        client.get_user(id).await.map(Json).map_err(|e| {
+        client.0.get_user(id).await.map(Json).map_err(|e| {
             eprintln!("Error in get_user: {}", e);
             Status::InternalServerError
         })
@@ -138,10 +138,11 @@ pub mod users {
     #[rocket::get("/<id>/icon")]
     pub async fn get_icon(
         id: &str,
-        client: &State<BotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
     ) -> Result<ResponseImage, Status> {
         client
+            .0
             .get_user_icon(id)
             .await
             .map(ResponseImage)
@@ -160,23 +161,15 @@ pub mod users {
 pub mod channels {
     use super::*;
 
-    use traq::models::Channel;
-
-    type Channels = Vec<Channel>;
-
     #[rocket::get("/")]
     pub async fn get_all(
-        client: &State<BotClient>,
+        client: &State<BC>,
         _user: AuthUser<'_>,
-    ) -> Result<Json<Channels>, Status> {
-        client
-            .get_channels()
-            .await
-            .map(|cl| Json(cl.public))
-            .map_err(|e| {
-                eprintln!("Error in get_channels: {}", e);
-                Status::InternalServerError
-            })
+    ) -> Result<Json<ChannelList>, Status> {
+        client.0.get_channels().await.map(Json).map_err(|e| {
+            eprintln!("Error in get_channels: {}", e);
+            Status::InternalServerError
+        })
     }
 
     pub fn routes() -> Routes {

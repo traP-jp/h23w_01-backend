@@ -4,10 +4,11 @@ use rocket::data::{Data, FromData, Outcome, ToByteUnit};
 use rocket::fs::NamedFile;
 use rocket::http::Status;
 use rocket::serde::json::Json;
-use rocket::{Request, Route};
+use rocket::{Request, Route, State};
 use serde::{Deserialize, Serialize};
 
 use crate::auth::AuthUser;
+use crate::CR;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -111,25 +112,35 @@ impl<'a> FromData<'a> for Png {
 }
 
 #[rocket::get("/")]
-pub async fn get_all(_user: AuthUser<'_>) -> (Status, Json<Vec<CardResponse>>) {
+pub async fn get_all(
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> (Status, Json<Vec<CardResponse>>) {
     // TODO: まだモックなので実装
     let v = vec![mock_card_response().await];
     (Status::Ok, Json(v))
 }
 
 #[rocket::post("/", data = "<card>")]
-pub async fn post(card: Json<CardRequest>, _user: AuthUser<'_>) -> String {
+pub async fn post(card: Json<CardRequest>, _card_repo: &State<CR>, _user: AuthUser<'_>) -> String {
     println!("request card: {:?}", card.0);
     "3e20b0e0-5672-4645-bf49-a2b69eafefc6".to_string()
 }
 
 #[rocket::get("/me")]
-pub async fn get_mine(_user: AuthUser<'_>) -> (Status, Json<Vec<CardResponse>>) {
+pub async fn get_mine(
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> (Status, Json<Vec<CardResponse>>) {
     (Status::Ok, Json(vec![]))
 }
 
 #[rocket::get("/<id>")]
-pub async fn get_one(id: String, _user: AuthUser<'_>) -> (Status, Option<Json<CardResponse>>) {
+pub async fn get_one(
+    id: String,
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> (Status, Option<Json<CardResponse>>) {
     let mc = mock_card_response().await;
     if id != mc.id {
         (Status::NotFound, None)
@@ -139,7 +150,7 @@ pub async fn get_one(id: String, _user: AuthUser<'_>) -> (Status, Option<Json<Ca
 }
 
 #[rocket::delete("/<id>")]
-pub async fn delete_one(id: String, _user: AuthUser<'_>) -> Status {
+pub async fn delete_one(id: String, _card_repo: &State<CR>, _user: AuthUser<'_>) -> Status {
     println!("delete card id={id}");
     Status::NoContent
 }
@@ -147,7 +158,11 @@ pub async fn delete_one(id: String, _user: AuthUser<'_>) -> Status {
 const CARD_ID: &str = "89d136ad-1ba2-4974-a44a-cc9b5c8c0670";
 
 #[rocket::get("/<id>/svg")]
-pub async fn get_svg(id: String, _user: AuthUser<'_>) -> (Status, Option<NamedFile>) {
+pub async fn get_svg(
+    id: String,
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> (Status, Option<NamedFile>) {
     println!("get image.svg {}", id);
     if id != CARD_ID {
         return (Status::NotFound, None);
@@ -159,19 +174,28 @@ pub async fn get_svg(id: String, _user: AuthUser<'_>) -> (Status, Option<NamedFi
 }
 
 #[rocket::post("/<id>/svg", data = "<svg>")]
-pub async fn post_svg(svg: Svg, id: String, _user: AuthUser<'_>) -> Status {
+pub async fn post_svg(svg: Svg, id: String, _card_repo: &State<CR>, _user: AuthUser<'_>) -> Status {
     println!("post image.svg {} with size {}", id, svg.0.len());
     Status::NoContent
 }
 
 #[rocket::patch("/<id>/svg", data = "<svg>")]
-pub async fn patch_svg(svg: Svg, id: String, _user: AuthUser<'_>) -> Status {
+pub async fn patch_svg(
+    svg: Svg,
+    id: String,
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> Status {
     println!("patch image.svg {} with size {}", id, svg.0.len());
     Status::NoContent
 }
 
 #[rocket::get("/<id>/png")]
-pub async fn get_png(id: String, _user: AuthUser<'_>) -> (Status, Option<NamedFile>) {
+pub async fn get_png(
+    id: String,
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> (Status, Option<NamedFile>) {
     println!("get image.png {}", id);
     if id != CARD_ID {
         return (Status::NotFound, None);
@@ -183,13 +207,18 @@ pub async fn get_png(id: String, _user: AuthUser<'_>) -> (Status, Option<NamedFi
 }
 
 #[rocket::post("/<id>/png", data = "<png>")]
-pub async fn post_png(png: Png, id: String, _user: AuthUser<'_>) -> Status {
+pub async fn post_png(png: Png, id: String, _card_repo: &State<CR>, _user: AuthUser<'_>) -> Status {
     println!("post image.png {} with size {}", id, png.0.len());
     Status::NoContent
 }
 
 #[rocket::patch("/<id>/png", data = "<png>")]
-pub async fn patch_png(png: Png, id: String, _user: AuthUser<'_>) -> Status {
+pub async fn patch_png(
+    png: Png,
+    id: String,
+    _card_repo: &State<CR>,
+    _user: AuthUser<'_>,
+) -> Status {
     println!("patch image.png {} with size {}", id, png.0.len());
     Status::NoContent
 }

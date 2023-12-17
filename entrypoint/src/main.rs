@@ -1,32 +1,36 @@
-use std::env;
-
 use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use rocket::{fairing::AdHoc, http::Method, routes};
 use traq_bot_http::RequestParser;
 
-use bot_client::BotClient;
-use repository::{
-    card::{CardRepository, CardRepositoryConfig, CardRepositoryImpl, MigrationStrategy},
-    image::{ImageRepositoryConfig, ImageRepositoryImpl},
-};
+use bot_client::BotClientImpl;
+use domain::repository::{CardRepository, MigrationStrategy};
+use repository::card::{CardRepositoryConfig, CardRepositoryImpl};
+use repository::image::{ImageRepositoryConfig, ImageRepositoryImpl};
 
 use handler::cors::{options, CorsConfig};
+
+mod wrappers;
 
 static CORS_CONFIG: Lazy<CorsConfig> =
     Lazy::new(|| CorsConfig::load_env().expect("failed to load CORS config"));
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    use std::env::var;
+
+    use handler::{BC, CR};
+
     let verification_token =
-        env::var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
-    let access_token = env::var("BOT_ACCESS_TOKEN").context("env var BOT_ACCESS_TOKEN is unset")?;
-    let check_auth = env::var("CHECK_AUTH")
+        var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
+    let access_token = var("BOT_ACCESS_TOKEN").context("env var BOT_ACCESS_TOKEN is unset")?;
+    let check_auth = var("CHECK_AUTH")
         .ok()
         .and_then(|c| c.parse::<bool>().ok())
         .unwrap_or(true);
     let parser = RequestParser::new(&verification_token);
-    let client = BotClient::new(access_token);
+    let client = BotClientImpl::new(access_token);
+    let client: BC = wrappers::BotClientWrapper(client).into();
     let card_repository = {
         let load = |s: &str| CardRepositoryConfig::load_env_with_prefix(s);
         let config = load("")
@@ -45,7 +49,7 @@ async fn main() -> Result<()> {
             .expect("env var config for object storage not found");
         ImageRepositoryImpl::new_with_config(config).expect("failed to connect object storage")
     };
-    let migration_strategy = env::var("MIGRATION")
+    let migration_strategy = var("MIGRATION")
         .ok()
         .and_then(|m| m.parse::<MigrationStrategy>().ok())
         .unwrap_or_default();
@@ -53,6 +57,7 @@ async fn main() -> Result<()> {
         .migrate(migration_strategy)
         .await
         .context("failed white migration")?;
+    let card_repository: CR = wrappers::CardRepositoryWrapper(card_repository).into();
     rocket::build()
         .mount("/api", routes![handler::ping])
         .mount("/api/cards", handler::cards::routes())

@@ -10,9 +10,10 @@ serde.workspace = true
 async-trait.workspace = true
 rocket.workspace = true
 traq-bot-http.workspace = true
-traq.workspace = true
 itertools.workspace = true
 bytes.workspace = true
+shaku.workspace = true
+anyhow.workspace = true
 
-bot-client.path = "../bot-client"
 repository.path = "../repository"
+domain.path = "../domain"
