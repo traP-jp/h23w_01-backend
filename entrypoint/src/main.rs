@@ -19,7 +19,7 @@ static CORS_CONFIG: Lazy<CorsConfig> =
 async fn main() -> Result<()> {
     use std::env::var;
 
-    use handler::{BC, CR};
+    use handler::{BC, CR, IR};
 
     let verification_token =
         var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
@@ -58,6 +58,7 @@ async fn main() -> Result<()> {
         .await
         .context("failed white migration")?;
     let card_repository: CR = wrappers::CardRepositoryWrapper(card_repository).into();
+    let image_repository: IR = wrappers::ImageRepositoryWrapper(image_repository).into();
     rocket::build()
         .mount("/api", routes![handler::ping])
         .mount("/api/cards", handler::cards::routes())
