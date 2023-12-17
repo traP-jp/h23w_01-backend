@@ -16,7 +16,7 @@ pub trait CardRepository {
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, RepositoryError>;
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, RepositoryError>;
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, RepositoryError>;
-    async fn delete_card(&self, card_id: Uuid) -> Result<(), RepositoryError>;
+    async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, RepositoryError>;
 }
 
 #[derive(Debug, Clone)]
@@ -145,10 +145,14 @@ impl CardRepository for CardRepositoryImpl {
         let card = Card::find_by_id(card_id).one(db).await?;
         Ok(card)
     }
-    async fn delete_card(&self, card_id: Uuid) -> Result<(), RepositoryError> {
+    async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, RepositoryError> {
         let db = &self.0;
-        Card::delete_by_id(card_id).exec(db).await?;
-        Ok(())
+        let result = Card::delete_by_id(card_id).exec(db).await;
+        match result {
+            Ok(_) => Ok(Some(())),
+            Err(DbErr::RecordNotFound(_)) => Ok(None),
+            Err(e) => Err(RepositoryError::DbErr(e)),
+        }
     }
 }
 
