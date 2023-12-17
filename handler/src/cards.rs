@@ -319,11 +319,36 @@ pub async fn update(
 #[rocket::delete("/<id>")]
 pub async fn delete_one(
     id: UuidParam,
+    bot_client: &State<BC>,
     card_repo: &State<CR>,
     image_repo: &State<IR>,
-    _user: AuthUser<'_>,
+    user: AuthUser<'_>,
 ) -> Result<Status, Status> {
+    // ユーザー確認
+    let mut users = bot_client
+        .0
+        .get_users(user.id)
+        .await
+        .map_err(|_| Status::Unauthorized)?;
+    let user = users.pop().ok_or(Status::Unauthorized)?;
+
     let id = id.0;
+    // 存在確認
+    let card = card_repo
+        .0
+        .get_card_by_id(id)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    // 自分以外のもの || 投稿済みのものは不可
+    let now = chrono::Utc::now();
+    if card.owner_id != user.id || card.publish_date <= now {
+        return Err(Status::Forbidden);
+    }
+
     card_repo
         .0
         .delete_card(id)
