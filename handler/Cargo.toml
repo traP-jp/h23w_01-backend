@@ -8,11 +8,10 @@ publish = false
 tokio.workspace = true
 serde.workspace = true
 async-trait.workspace = true
-rocket = { version = "0.5", features = ["json"] }
-traq-bot-http = "0.8.0"
+rocket.workspace = true
+traq-bot-http.workspace = true
 traq.workspace = true
 itertools.workspace = true
-once_cell = "1.19.0"
 bytes.workspace = true
 
 bot-client.path = "../bot-client"

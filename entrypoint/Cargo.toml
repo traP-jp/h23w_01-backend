@@ -1,0 +1,17 @@
+[package]
+name = "entrypoint"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+once_cell = "1.19.0"
+rocket.workspace = true
+tokio.workspace = true
+traq-bot-http.workspace = true
+
+bot-client.path = "../bot-client"
+handler.path = "../handler"
+repository.path = "../repository"
+anyhow = "1.0.75"

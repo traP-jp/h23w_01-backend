@@ -29,6 +29,9 @@ traQ BOTの設定
 名前 | 値
 :-- | :--
 `ALLOWED_ORIGINS` | CORSで`Access-Control-Allow-Origin`に含めるOriginのリスト。空白区切り
+`ALLOW_CREDENTIALS` | (optional)CORSで`Access-Control-Allow-Credentials`に含める値。`true`または`false`, デフォルトは`true`
+`ALLOWED_METHODS` | (optional)CORSで`Access-Control-Allow-Methods`に含めるHTTPメソッドのリスト。空白区切り
+`ALLOWED_HEADERS` | (optional)CORSで`Access-Control-Allow-Headers`に含めるHTTPヘッダのリスト。空白区切り
 `CHECK_AUTH` | 主要なエンドポイントで`X-Forwarded-User`によるユーザーの確認を行うかどうか。`true`または`false`
 
 値の例は[`.env.dev`](./.env.dev)を参照

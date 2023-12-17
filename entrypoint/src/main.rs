@@ -1,10 +1,8 @@
-#[macro_use]
-extern crate rocket;
+use std::env;
 
-use std::{env, process::exit};
-
+use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
-use rocket::{fairing::AdHoc, http::Method};
+use rocket::{fairing::AdHoc, http::Method, routes};
 use traq_bot_http::RequestParser;
 
 use bot_client::BotClient;
@@ -15,24 +13,14 @@ use repository::{
 
 use handler::cors::{options, CorsConfig};
 
-static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
-    let Ok(origins) = env::var("ALLOWED_ORIGINS") else {
-        eprintln!("env_var ALLOWED_ORIGIN is unset");
-        exit(1);
-    };
-    CorsConfig::new(origins.split(' '))
-});
+static CORS_CONFIG: Lazy<CorsConfig> =
+    Lazy::new(|| CorsConfig::load_env().expect("failed to load CORS config"));
 
-#[get("/ping")]
-fn ping() -> &'static str {
-    "pong"
-}
-
-#[launch]
-async fn rocket() -> _ {
+#[tokio::main]
+async fn main() -> Result<()> {
     let verification_token =
-        env::var("VERIFICATION_TOKEN").expect("env var VERIFICATION_TOKEN is unset");
-    let access_token = env::var("BOT_ACCESS_TOKEN").expect("env var BOT_ACCESS_TOKEN is unset");
+        env::var("VERIFICATION_TOKEN").context("env var VERIFICATION_TOKEN is unset")?;
+    let access_token = env::var("BOT_ACCESS_TOKEN").context("env var BOT_ACCESS_TOKEN is unset")?;
     let check_auth = env::var("CHECK_AUTH")
         .ok()
         .and_then(|c| c.parse::<bool>().ok())
@@ -44,10 +32,10 @@ async fn rocket() -> _ {
         let config = load("")
             .or_else(|_| load("MYSQL_"))
             .or_else(|_| load("NS_MARIADB_"))
-            .expect("env var config for database not found");
+            .context("env var config for database not found")?;
         CardRepositoryImpl::connect_with_config(config)
             .await
-            .expect("failed to connect database")
+            .context("failed to connect database")?
     };
     let image_repository = {
         let load = |s: &str| ImageRepositoryConfig::load_env_with_prefix(s);
@@ -64,9 +52,9 @@ async fn rocket() -> _ {
     card_repository
         .migrate(migration_strategy)
         .await
-        .expect("failed white migration");
+        .context("failed white migration")?;
     rocket::build()
-        .mount("/api", routes![ping])
+        .mount("/api", routes![handler::ping])
         .mount("/api/cards", handler::cards::routes())
         .mount("/api/images", handler::images::routes())
         .mount("/bot", routes![handler::bot::bot_event])
@@ -91,6 +79,7 @@ async fn rocket() -> _ {
                     return;
                 };
                 res.set_header(origin_header);
+                res.set_header(CORS_CONFIG.render_credentials());
                 if req.method() != Method::Options {
                     println!("CORS wrapper: method is not OPTION");
                     return;
@@ -99,4 +88,7 @@ async fn rocket() -> _ {
                 res.set_header(CORS_CONFIG.render_headers());
             })
         }))
+        .launch()
+        .await?;
+    Ok(())
 }
