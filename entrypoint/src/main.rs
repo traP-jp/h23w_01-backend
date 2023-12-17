@@ -10,10 +10,9 @@ use repository::card::{
     CardRepository, CardRepositoryConfig, CardRepositoryImpl, MigrationStrategy,
 };
 
-use handler::{
-    cors::{options, CorsConfig},
-    traq_api::BotClientWrapper,
-};
+use handler::cors::{options, CorsConfig};
+
+mod wrappers;
 
 static CORS_CONFIG: Lazy<CorsConfig> = Lazy::new(|| {
     let Ok(origins) = env::var("ALLOWED_ORIGINS") else {
@@ -34,7 +33,7 @@ async fn main() -> Result<()> {
         .unwrap_or(true);
     let parser = RequestParser::new(&verification_token);
     let client = BotClientImpl::new(access_token);
-    let client = BotClientWrapper(client);
+    let client = wrappers::BotClientWrapper(client);
     let card_repository = {
         let load = |s: &str| CardRepositoryConfig::load_env_with_prefix(s);
         let config = load("")

@@ -11,7 +11,9 @@ rocket.workspace = true
 tokio.workspace = true
 traq-bot-http.workspace = true
 anyhow.workspace = true
+async-trait.workspace = true
 
 bot-client.path = "../bot-client"
 handler.path = "../handler"
 repository.path = "../repository"
+domain.path = "../domain"

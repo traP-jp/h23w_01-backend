@@ -867,7 +867,9 @@ name = "entrypoint"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bot-client",
+ "domain",
  "handler",
  "once_cell",
  "repository",
