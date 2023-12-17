@@ -9,6 +9,7 @@ tokio-cron-scheduler.workspace = true
 async-trait.workspace = true
 chrono.workspace = true
 futures.workspace = true
+anyhow.workspace = true
 
 domain.path = "../domain"
 indoc = "2.0.4"

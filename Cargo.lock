@@ -759,6 +759,7 @@ checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
 name = "cron"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "chrono",
  "domain",
@@ -971,6 +972,7 @@ dependencies = [
  "async-trait",
  "bot-client",
  "bytes",
+ "cron 0.1.0",
  "domain",
  "handler",
  "once_cell",

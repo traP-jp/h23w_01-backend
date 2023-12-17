@@ -16,6 +16,21 @@ pub struct CronImpl<CR: CardRepository, IR: ImageRepository, BC: BotClient> {
     bot_client: Arc<BC>,
 }
 
+impl<
+        CR: CardRepository<Error = impl Debug + Send>,
+        IR: ImageRepository<Error = impl Debug + Send>,
+        BC: BotClient<Error = impl Debug + Send>,
+    > CronImpl<CR, IR, BC>
+{
+    pub fn new(card_repository: Arc<CR>, image_repository: Arc<IR>, bot_client: Arc<BC>) -> Self {
+        Self {
+            card_repository,
+            image_repository,
+            bot_client,
+        }
+    }
+}
+
 #[async_trait]
 impl<
         CR: CardRepository<Error = impl Debug + Send>,
@@ -44,9 +59,9 @@ impl<
 }
 
 async fn task<
-    CR: CardRepository<Error = impl Debug>,
-    IR: ImageRepository<Error = impl Debug>,
-    BC: BotClient<Error = impl Debug>,
+    CR: CardRepository<Error = impl Debug + Send>,
+    IR: ImageRepository<Error = impl Debug + Send>,
+    BC: BotClient<Error = impl Debug + Send>,
 >(
     card_repository: Arc<CR>,
     image_repository: Arc<IR>,

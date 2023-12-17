@@ -1,13 +1,17 @@
+use std::sync::Arc;
+
+use crate::wrappers::CardRepositoryWrapper;
 use anyhow::{Context, Result};
+use bot_client::BotClientImpl;
+use cron::CronImpl;
+use domain::repository::{CardRepository, MigrationStrategy};
 use once_cell::sync::Lazy;
+use repository::card::{CardRepositoryConfig, CardRepositoryImpl};
+use repository::image::{ImageRepositoryConfig, ImageRepositoryImpl};
 use rocket::{fairing::AdHoc, http::Method, routes};
 use traq_bot_http::RequestParser;
 
-use bot_client::BotClientImpl;
-use domain::repository::{CardRepository, MigrationStrategy};
-use repository::card::{CardRepositoryConfig, CardRepositoryImpl};
-use repository::image::{ImageRepositoryConfig, ImageRepositoryImpl};
-
+use domain::cron::Cron;
 use handler::cors::{options, CorsConfig};
 
 mod wrappers;
@@ -30,7 +34,6 @@ async fn main() -> Result<()> {
         .unwrap_or(true);
     let parser = RequestParser::new(&verification_token);
     let client = BotClientImpl::new(access_token);
-    let client: BC = wrappers::BotClientWrapper(client).into();
     let card_repository = {
         let load = |s: &str| CardRepositoryConfig::load_env_with_prefix(s);
         let config = load("")
@@ -49,6 +52,17 @@ async fn main() -> Result<()> {
             .expect("env var config for object storage not found");
         ImageRepositoryImpl::new_with_config(config).expect("failed to connect object storage")
     };
+    let card_repository = CardRepositoryWrapper(card_repository);
+    let card_repository = Arc::new(card_repository);
+    let image_repository = Arc::new(image_repository);
+    let cron = CronImpl::new(
+        card_repository.clone(),
+        image_repository.clone(),
+        Arc::new(client.clone()),
+    );
+    let cron = Arc::new(cron);
+    let client: BC = wrappers::BotClientWrapper(client).into();
+    tokio::spawn(async move { cron.run().await });
     let migration_strategy = var("MIGRATION")
         .ok()
         .and_then(|m| m.parse::<MigrationStrategy>().ok())
@@ -57,7 +71,7 @@ async fn main() -> Result<()> {
         .migrate(migration_strategy)
         .await
         .context("failed white migration")?;
-    let card_repository: CR = wrappers::CardRepositoryWrapper(card_repository).into();
+    let card_repository: CR = CR(card_repository);
     rocket::build()
         .mount("/api", routes![handler::ping])
         .mount("/api/cards", handler::cards::routes())
