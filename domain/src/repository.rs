@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use bytes::Bytes;
-use chrono::NaiveDateTime;
 use mockall::automock;
 use serde::{Deserialize, Serialize};
 use shaku::Interface;
@@ -21,6 +20,7 @@ pub trait CardRepository: Interface {
     async fn get_all_cards(&self) -> Result<Vec<CardModel>, Self::Error>;
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, Self::Error>;
     async fn get_card_by_id(&self, card_id: Uuid) -> Result<Option<CardModel>, Self::Error>;
+    async fn get_publish_channels_by_id(&self, card_id: Uuid) -> Result<Vec<Uuid>, Self::Error>;
     async fn delete_card(&self, card_id: Uuid) -> Result<Option<()>, Self::Error>;
 }
 
@@ -53,7 +53,7 @@ impl std::str::FromStr for MigrationStrategy {
 pub struct CardModel {
     pub id: Uuid,
     pub owner_id: Uuid,
-    pub publish_date: NaiveDateTime,
+    pub publish_date: DateTimeUtc,
     pub message: Option<String>,
 }
 
