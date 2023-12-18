@@ -1340,7 +1340,6 @@ dependencies = [
  "chrono",
  "domain",
  "itertools 0.12.0",
- "repository",
  "rocket",
  "serde",
  "shaku",
