@@ -1,5 +1,3 @@
-use crate::error::RepositoryError;
-use entity::prelude::*;
 use sea_orm::{
     ActiveValue, ColumnTrait, Condition, ConnectOptions, Database, DatabaseConnection, DbErr,
     EntityTrait, QueryFilter, TransactionTrait,
@@ -12,6 +10,8 @@ use domain::repository::{
     CardModel, CardRepository, DateTimeUtc, MigrationStrategy, PublishChannelModel, SaveCardParams,
 };
 
+use crate::entity::prelude::*;
+use crate::error::RepositoryError;
 use crate::migration::Migrator;
 
 #[derive(Debug, Clone)]
