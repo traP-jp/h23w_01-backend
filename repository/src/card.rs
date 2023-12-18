@@ -12,7 +12,7 @@ use domain::repository::{
     CardModel, CardRepository, DateTimeUtc, MigrationStrategy, PublishChannelModel, SaveCardParams,
 };
 
-use migration::Migrator;
+use crate::migration::Migrator;
 
 #[derive(Debug, Clone)]
 pub struct CardRepositoryConfig {

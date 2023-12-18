@@ -1,15 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "domain",
-    "handler",
-    "repository",
-    "migration",
-    "entity",
-    "bot-client",
-    "entrypoint",
-    "cron",
-]
+members = ["domain", "handler", "repository", "entity", "bot-client", "entrypoint", "cron"]
 
 [workspace.dependencies]
 tokio = { version = "1.35.0", features = ["full"] }
@@ -19,9 +10,7 @@ serde_json = "1.0.108"
 bytes = "1.5.0"
 thiserror = "1.0.50"
 traq = "0.1.2"
-rust-s3 = { version = "0.33.0", default-features = false, features = [
-    "tokio-rustls-tls",
-] }
+rust-s3 = { version = "0.33.0", default-features = false, features = ["tokio-rustls-tls"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 chrono = { version = "0.4.31" }
 itertools = "0.12.0"
