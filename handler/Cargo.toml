@@ -17,5 +17,4 @@ anyhow.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 
-repository.path = "../repository"
 domain.path = "../domain"
