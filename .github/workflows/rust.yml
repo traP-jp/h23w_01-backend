@@ -23,6 +23,7 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Lint
         run: cargo clippy --all-targets --all-features -- -D warnings
+
   nix-build:
     runs-on: ubuntu-latest
     steps:
@@ -32,3 +33,9 @@ jobs:
           nix_path: "nixpkgs=channel:release-23.11"
       - uses: DeterminateSystems/magic-nix-cache-action@v2
       - run: nix build .#ci
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t h23w_01-backend .
