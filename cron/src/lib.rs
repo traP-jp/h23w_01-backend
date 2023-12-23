@@ -70,7 +70,7 @@ async fn task<
     use indoc::formatdoc;
     let now = Utc::now();
     let start = now;
-    let end = now + Duration::seconds(1);
+    let end = now + Duration::minutes(1);
     let Ok(cards_with_channels) = card_repository
         .get_card_with_channels_by_date(start, end)
         .await
