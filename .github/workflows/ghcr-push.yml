@@ -21,7 +21,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/trap-jp/h23w-01-backend:main
+          images: ghcr.io/trap-jp/h23w-01-backend
           tags: |
             type=ref,event=branch
             type=ref,event=pr
