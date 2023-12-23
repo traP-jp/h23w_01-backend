@@ -137,7 +137,7 @@ async fn task<
             let _ = bot_client
                 .post_message(&PostMessageParams {
                     content: message,
-                    channel_id: card.id,
+                    channel_id: channel.id,
                     embed: false,
                 })
                 .await
