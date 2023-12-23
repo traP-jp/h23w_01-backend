@@ -42,7 +42,7 @@ impl<
         let sched = JobScheduler::new().await.unwrap();
         sched
             .add(
-                Job::new_async("* * * * *", move |_uuid, _l| {
+                Job::new_async("* * * * * * *", move |_uuid, _l| {
                     let card_repository = self.clone().card_repository.clone();
                     let image_repository = self.clone().image_repository.clone();
                     let bot_client = self.clone().bot_client.clone();
@@ -71,52 +71,79 @@ async fn task<
     let now = Utc::now();
     let start = now;
     let end = now + Duration::seconds(1);
-    let cards_with_channels = card_repository
+    let Ok(cards_with_channels) = card_repository
         .get_card_with_channels_by_date(start, end)
         .await
-        .unwrap();
+        .map_err(|e| {
+            eprintln!("failed to get cards: {:?}", e);
+        })
+    else {
+        return;
+    };
     let sends = cards_with_channels.iter().map(|(card, channels)| async {
         let sends = channels.iter().map(|channel| async {
-            let file_id = bot_client
+            let Ok(png) = image_repository.get_png(card.id).await.map_err(|e| {
+                eprintln!("failed to get png: {:?}", e);
+            }) else {
+                return;
+            };
+            let Some(png) = png else {
+                eprintln!("png not found");
+                return;
+            };
+            let Ok(file_id) = bot_client
                 .uplodad_file(&UploadFileParams {
                     id: card.id,
                     channel_id: channel.id,
-                    content: image_repository.get_png(card.id).await.unwrap().unwrap(),
+                    content: png,
                     mime_type: "image/png".to_string(),
                 })
                 .await
-                .unwrap()
-                .id;
-            let user = bot_client
+                .map(|f| f.id)
+                .map_err(|e| {
+                    eprintln!("failed to upload file: {:?}", e);
+                })
+            else {
+                return;
+            };
+            let Ok(user) = bot_client
                 .get_user(&card.owner_id.to_string())
                 .await
-                .unwrap();
+                .map_err(|e| {
+                    eprintln!("failed to get user: {:?}", e);
+                })
+            else {
+                return;
+            };
             let message = match card.message.as_ref() {
                 Some(m) => formatdoc! {
                     r##"
-                    !{{"type":"user","raw":"@{}","id":"{}"}} からのQardです！
-                    {}
+                        !{{"type":"user","raw":"@{}","id":"{}"}} からのQardです！
+                        {}
 
-                    https://q.trap.jp/files/{}
-                "##,
+                        https://q.trap.jp/files/{}
+                    "##,
                     user.name, user.id, m, file_id
                 },
                 None => formatdoc! {
                     r##"
-                    !{{"type":"user","raw":"@{}","id":"{}"}} からのQardです！
+                        !{{"type":"user","raw":"@{}","id":"{}"}} からのQardです！
 
-                    https://q.trap.jp/files/{}
-                "##,
+                        https://q.trap.jp/files/{}
+                    "##,
                     user.name, user.id, file_id
                 },
             };
-            bot_client
+            let _ = bot_client
                 .post_message(&PostMessageParams {
                     content: message,
                     channel_id: card.id,
                     embed: false,
                 })
                 .await
+                .map_err(|e| {
+                    eprintln!("failed to post message: {:?}", e);
+                });
         });
         join_all(sends).await
     });

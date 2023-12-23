@@ -9,6 +9,7 @@ edition = "2021"
 once_cell = "1.19.0"
 rocket.workspace = true
 tokio.workspace = true
+traq.workspace = true
 traq-bot-http.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true

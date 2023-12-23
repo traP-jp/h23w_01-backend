@@ -783,6 +783,7 @@ dependencies = [
  "repository",
  "rocket",
  "tokio",
+ "traq",
  "traq-bot-http",
  "uuid",
 ]
