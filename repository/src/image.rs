@@ -71,8 +71,8 @@ impl ImageRepository for ImageRepositoryImpl {
         let bucket = &self.0;
         let key = format!("{}.svg", card_id);
         bucket
-            // .put_object_with_content_type(&key, content.as_bytes(), "image/svg+xml")
-            .put_object(&key, content.as_bytes())
+            .put_object_with_content_type(&key, content.as_bytes(), "image/svg+xml")
+            // .put_object(&key, content.as_bytes())
             .await?;
         Ok(())
     }
