@@ -42,7 +42,7 @@ impl<
         let sched = JobScheduler::new().await.unwrap();
         sched
             .add(
-                Job::new_async("* * * * * * *", move |_uuid, _l| {
+                Job::new_async("0 * * * * * *", move |_uuid, _l| {
                     let card_repository = self.clone().card_repository.clone();
                     let image_repository = self.clone().image_repository.clone();
                     let bot_client = self.clone().bot_client.clone();
