@@ -165,7 +165,7 @@ impl CardRepository for CardRepositoryImpl {
     async fn get_my_cards(&self, user_id: Uuid) -> Result<Vec<CardModel>, RepositoryError> {
         let db = &self.0;
         let cards = Card::find()
-            .filter(CardColumn::OwnerId.contains(user_id))
+            .filter(CardColumn::OwnerId.eq(user_id))
             .all(db)
             .await?
             .into_iter()
