@@ -187,7 +187,7 @@ impl CardRepository for CardRepositoryImpl {
     ) -> Result<Vec<Uuid>, RepositoryError> {
         let db = &self.0;
         let pub_chans = PublishChannel::find()
-            .filter(PublishChannelColumn::CardId.contains(card_id))
+            .filter(PublishChannelColumn::CardId.eq(card_id))
             .all(db)
             .await?
             .into_iter()
