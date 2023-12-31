@@ -15,6 +15,4 @@ COPY --from=builder /app/target/debug/entrypoint ./main
 COPY --from=builder /app/Rocket.toml ./Rocket.toml
 COPY --from=builder /app/mock-assets ./mock-assets
 
-# TODO: migration
-
 CMD ["./main"]
