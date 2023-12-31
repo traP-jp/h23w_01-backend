@@ -10,6 +10,7 @@ use rocket::{Request, Response, Route, State};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use domain::bot_client::User;
 use domain::repository::{CardModel, DateTimeUtc, SaveCardParams};
 
 use crate::auth::AuthUser;
@@ -119,6 +120,16 @@ impl<'r, 'o: 'r> Responder<'r, 'o> for Png {
     }
 }
 
+/// `自分のもの || 投稿済み` ならば閲覧可能(削除・編集は別)
+fn visible_card(user: &User, card: &CardModel, now: DateTimeUtc) -> bool {
+    user.id == card.owner_id || card.publish_date <= now
+}
+
+/// `自分のもの && 未投稿` ならば編集可能(削除含む)
+fn editable_card(user: &User, card: &CardModel, now: DateTimeUtc) -> bool {
+    user.id == card.owner_id && card.publish_date > now
+}
+
 async fn complete_card_response_one(
     model: &CardModel,
     card_repo: &State<CR>,
@@ -183,7 +194,7 @@ pub async fn get_all(
             Status::InternalServerError
         })?
         .into_iter()
-        .filter(|c| c.owner_id == user.id || c.publish_date < now)
+        .filter(|c| visible_card(&user, c, now))
         .collect();
     let response = complete_card_response(&card_models, card_repo)
         .await
@@ -198,11 +209,11 @@ pub async fn get_all(
 pub async fn post(
     card: Json<CardRequest>,
     card_repo: &State<CR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<(Status, String), Status> {
     // TODO: imagesのIDをDBにcard_idとのrelationで入れたい
     // GCのため
-    // TODO: requestのowner_idとuser.idの一致確認
+    let user = user.0.ok_or(Status::Unauthorized)?;
     let CardRequest {
         owner_id,
         publish_date,
@@ -210,6 +221,9 @@ pub async fn post(
         message,
         images: _image,
     } = card.0;
+    if user.id != owner_id {
+        return Err(Status::Forbidden);
+    }
     let params = SaveCardParams {
         id: Uuid::new_v4(),
         owner_id,
@@ -247,9 +261,10 @@ pub async fn get_mine(
 pub async fn get_one(
     id: UuidParam,
     card_repo: &State<CR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<(Status, Json<CardResponse>), Status> {
-    // TODO: NotFoundを返すべき場合がありそう
+    let user = user.0.ok_or(Status::Unauthorized)?;
+    let now = chrono::Utc::now();
     let card_model = card_repo
         .0
         .get_card_by_id(id.0)
@@ -259,6 +274,9 @@ pub async fn get_one(
             Status::InternalServerError
         })?
         .ok_or(Status::NotFound)?;
+    if !visible_card(&user, &card_model, now) {
+        return Err(Status::NotFound);
+    }
     let res = complete_card_response_one(&card_model, card_repo)
         .await
         .map_err(|e| {
@@ -273,9 +291,23 @@ pub async fn update(
     id: UuidParam,
     card: Json<CardRequest>,
     card_repo: &State<CR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<Status, Status> {
-    // TODO: requestのowner_idとuser.idの一致確認
+    let id = id.0;
+    let user = user.0.ok_or(Status::Unauthorized)?;
+    let card_model = card_repo
+        .0
+        .get_card_by_id(id)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let now = chrono::Utc::now();
+    if !editable_card(&user, &card_model, now) {
+        return Err(Status::Forbidden);
+    }
     let CardRequest {
         owner_id,
         publish_date,
@@ -284,7 +316,7 @@ pub async fn update(
         images: _image,
     } = card.0;
     let params = SaveCardParams {
-        id: id.0,
+        id,
         owner_id,
         publish_date,
         message,
@@ -322,9 +354,8 @@ pub async fn delete_one(
             Status::InternalServerError
         })?
         .ok_or(Status::NotFound)?;
-    // 自分以外のもの || 投稿済みのものは不可
     let now = chrono::Utc::now();
-    if card.owner_id != user.id || card.publish_date <= now {
+    if !editable_card(&user, &card, now) {
         return Err(Status::Forbidden);
     }
 
@@ -370,10 +401,24 @@ pub async fn delete_one(
 #[rocket::get("/<id>/svg")]
 pub async fn get_svg(
     id: UuidParam,
+    card_repo: &State<CR>,
     image_repo: &State<IR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<Svg, Status> {
-    // TODO: 404を返すべき場合がある
+    let user = user.0.ok_or(Status::Unauthorized)?;
+    let card_model = card_repo
+        .0
+        .get_card_by_id(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let now = chrono::Utc::now();
+    if !visible_card(&user, &card_model, now) {
+        return Err(Status::NotFound);
+    }
     let res = image_repo
         .0
         .get_svg(id.0)
@@ -390,11 +435,24 @@ pub async fn get_svg(
 pub async fn post_svg(
     svg: Svg,
     id: UuidParam,
+    card_repo: &State<CR>,
     image_repo: &State<IR>,
-    _card_repo: &State<CR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<Status, Status> {
-    // TODO: 404
+    let user = user.0.ok_or(Status::Unauthorized)?;
+    let card = card_repo
+        .0
+        .get_card_by_id(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let now = chrono::Utc::now();
+    if !editable_card(&user, &card, now) {
+        return Err(Status::Forbidden);
+    }
     image_repo.0.save_svg(id.0, &svg.0).await.map_err(|e| {
         eprintln!("error in create svg: {}", e);
         Status::InternalServerError
@@ -406,11 +464,24 @@ pub async fn post_svg(
 pub async fn patch_svg(
     svg: Svg,
     id: UuidParam,
+    card_repo: &State<CR>,
     image_repo: &State<IR>,
-    _card_repo: &State<CR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<Status, Status> {
-    // TODO: requestのowner_idとuser.idの一致確認
+    let user = user.0.ok_or(Status::Unauthorized)?;
+    let card = card_repo
+        .0
+        .get_card_by_id(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let now = chrono::Utc::now();
+    if user.id != card.owner_id || card.publish_date <= now {
+        return Err(Status::Forbidden);
+    }
     image_repo.0.save_svg(id.0, &svg.0).await.map_err(|e| {
         eprintln!("error in update svg: {}", e);
         Status::InternalServerError
@@ -421,10 +492,24 @@ pub async fn patch_svg(
 #[rocket::get("/<id>/png")]
 pub async fn get_png(
     id: UuidParam,
+    card_repo: &State<CR>,
     image_repo: &State<IR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<Png, Status> {
-    // TODO: requestのowner_idとuser.idの一致確認
+    let user = user.0.ok_or(Status::Unauthorized)?;
+    let card = card_repo
+        .0
+        .get_card_by_id(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let now = chrono::Utc::now();
+    if !visible_card(&user, &card, now) {
+        return Err(Status::NotFound);
+    }
     let png = image_repo
         .0
         .get_png(id.0)
@@ -441,10 +526,24 @@ pub async fn get_png(
 pub async fn post_png(
     png: Png,
     id: UuidParam,
+    card_repo: &State<CR>,
     image_repo: &State<IR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<Status, Status> {
-    // TODO: owner_idとuser.idの一致確認
+    let user = user.0.ok_or(Status::Unauthorized)?;
+    let card = card_repo
+        .0
+        .get_card_by_id(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let now = chrono::Utc::now();
+    if !editable_card(&user, &card, now) {
+        return Err(Status::Forbidden);
+    }
     image_repo.0.save_png(id.0, &png.0).await.map_err(|e| {
         eprintln!("error in create png: {}", e);
         Status::InternalServerError
@@ -456,10 +555,24 @@ pub async fn post_png(
 pub async fn patch_png(
     png: Png,
     id: UuidParam,
+    card_repo: &State<CR>,
     image_repo: &State<IR>,
-    _user: AuthUser,
+    user: AuthUser,
 ) -> Result<Status, Status> {
-    // TODO: owner_idとuser.idの一致確認
+    let user = user.0.ok_or(Status::Unauthorized)?;
+    let card = card_repo
+        .0
+        .get_card_by_id(id.0)
+        .await
+        .map_err(|e| {
+            eprintln!("error in get card by id: {}", e);
+            Status::InternalServerError
+        })?
+        .ok_or(Status::NotFound)?;
+    let now = chrono::Utc::now();
+    if !editable_card(&user, &card, now) {
+        return Err(Status::Forbidden);
+    }
     image_repo.0.save_png(id.0, &png.0).await.map_err(|e| {
         eprintln!("error in update png: {}", e);
         Status::InternalServerError
